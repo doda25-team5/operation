@@ -10,7 +10,7 @@ This repository contains the **Docker Compose** setup used to run the complete S
 
 The following software is required to run the application:
 * **Docker**
-* **Docker Compose v3+**
+* **Docker Compose v2+**
 
 ---
 
@@ -24,8 +24,10 @@ docker compose up --pull always
 
 This command will:
 * Pull images from **GHCR** (GitHub Container Registry).
-* Start the backend on `http://localhost:8081`.
+* Set up the internal network
+* Start both services
 * Start the frontend on `http://localhost:8080/sms`.
+
 
 To start the application in **detached mode** (running in the background):
 
@@ -51,36 +53,46 @@ To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_TAG` envir
 IMAGE_TAG=v1.0.2 docker compose up --pull always
 ```
 
-This ensures both services use the specified version:
-* `ghcr.io/doda25-team5/sms-frontend:v1.0.2`
-* `ghcr.io/doda25-team5/sms-backend:v1.0.2`
 
----
 
 ## ⚙️ Environment Variables
 
 ### Frontend
-* **`MODEL_HOST`**: The backend URL (default: `http://model-service:8081`)
-* **`SERVER_PORT`**: The frontend port (default: `8080`)
+| Variable      | Purpose                                    | Default                     |
+| ------------- | ------------------------------------------ | --------------------------- |
+| `MODEL_HOST`  | URL of model-service inside Docker network | `http://model-service:8081` |
+| `SERVER_PORT` | Internal port the frontend binds to        | `8080`                      |
+
 
 ### Model-Service
-* **`MODEL_PORT`**: The backend port (default: `8081`)
+| Variable           | Purpose                                      | Default                   |
+| ------------------ | -------------------------------------------- | ------------------------- |
+| `MODEL_PORT`       | Internal port Flask listens on               | `8081`                    |
+| `MODEL_URL`        | Public URL of the model artifact             | set in docker-compose.yml |
+| `PREPROCESSOR_URL` | Public URL of the preprocessor artifact      | set in docker-compose.yml |
+| `MODEL_DIR`        | Directory for downloaded/mounted model files | `/root/sms/output`        |
+
+Override Example:
+```bash
+MODEL_URL="https://example/model.joblib" \
+PREPROCESSOR_URL="https://example/preprocessor.joblib" \
+docker compose up -d
+```
 
 ---
 
-## Volumes
+## Test the frontend    
 
-The backend uses a volume to store or load model files, mapping the host's `./model-data` directory to the container's `/app/output`:
+Open:
 
+```bash
+http://localhost:8080/sms
 ```
-./model-data:/app/output
-```
 
-**Note:** Place trained model files into the **`model-data`** folder if they need to be loaded by the model-service.
+Submit an SMS message and verify the prediction result.
 
----
-
-## 🔗 Related Repositories
+## Related Repositories
 
 * **`app`**: Contains the Spring Boot frontend application and its Dockerfile.
 * **`model-service`**: Contains the Python backend application and its Dockerfile.
+* **`lib-version`**: Version-aware Maven Library
