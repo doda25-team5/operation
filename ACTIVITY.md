@@ -1,6 +1,7 @@
 ## WEEK 1&2 - Assignment 1 
 
-#### Erkin : 
+#### Erkin : https://github.com/doda25-team5/app/pull/2, https://github.com/doda25-team5/app/pull/4, https://github.com/doda25-team5/app/pull/6, https://github.com/doda25-team5/model-service/pull/2, https://github.com/doda25-team5/model-service/pull/7.
+Worked on Feature 3 and Feature 4, creating a Dockerfile and adding support for multiple architectures. However, while implementing Feature 3, I unintentionally did model training, which relates to Features 8 and 9, because I couldn’t get Feature 4 to work independently. For Feature 4, I uploaded the package to the registry and ran model training to verify that the multi-architecture images were functioning correctly. Additionally, there were issues accessing the lib-version packages, so I added a settings.xml file to the app repository and fixed the lib-version downloading problem.
 
 #### Vedant: https://github.com/doda25-team5/app/pull/3, https://github.com/doda25-team5/model-service/pull/3
 Worked on Feature 5 & 6 to enable multi-stage images for F5 and updated the Dockerfile to define model-service URL and service ports via environment variables, with app defaulting to 8080 and model-service to 8081.
