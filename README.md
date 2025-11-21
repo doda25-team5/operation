@@ -14,42 +14,6 @@ The following software is required to run the application:
 
 ---
 
-## ▶ How to Start the Application
-
-From this directory, use the following command to start the services:
-
-```bash
-docker compose up --pull always
-```
-
-This command will:
-* Pull images from **GHCR** (GitHub Container Registry).
-* Set up the internal network
-* Start both services
-* Start the frontend on `http://localhost:8080/sms`.
-
-
-To start the application in **detached mode** (running in the background):
-
-```bash
-docker compose up -d
-```
-
-To **stop** and remove the containers, networks, and volumes:
-
-```bash
-docker compose down
-```
-
----
-
-## Using a Specific Image Tag
-
-By default, the Compose file uses the **`latest`** image tag.
-
-
-To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_FRONTEND_TAG` or `IMAGE_BACKEND_TAG` environment variable in the .env when running Compose:
-
 
 ## ⚙️ Environment Variables in .env
 
@@ -89,6 +53,42 @@ FRONTEND_HOST_PORT=8080
 SERVER_PORT=8080
 
 ```
+---
+## ▶ How to Start the Application
+
+From this directory, use the following command to start the services:
+
+```bash
+docker compose up --pull always
+```
+
+This command will:
+* Pull images from **GHCR** (GitHub Container Registry).
+* Set up the internal network
+* Start both services
+* Start the frontend on `http://localhost:8080/sms`.
+
+
+To start the application in **detached mode** (running in the background):
+
+```bash
+docker compose up -d
+```
+
+To **stop** and remove the containers, networks, and volumes:
+
+```bash
+docker compose down
+```
+
+---
+
+## Using a Specific Image Tag
+
+By default, the Compose file uses the **`latest`** image tag.
+
+
+To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_FRONTEND_TAG` or `IMAGE_BACKEND_TAG` environment variable in the .env when running Compose:
 
 
 ---
@@ -107,7 +107,7 @@ Submit an SMS message and verify the prediction result.
 ```bash
 http://localhost:8080/lib-version
 ```
-
+---
 
 ## Related Repositories
 
