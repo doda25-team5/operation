@@ -52,7 +52,27 @@ To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_FRONTEND_T
 
 
 ## ⚙️ Environment Variables in .env
-All variables are configured in the `.env` file.
+
+
+Defining the purpose of a few variables:
+
+### Frontend
+| Variable      | Purpose                                    | Default                     |
+| ------------- | ------------------------------------------ | --------------------------- |
+| `SERVER_PORT` | Internal port the frontend binds to        | `8080`                      |
+
+
+### Model-Service
+| Variable           | Purpose                                      | Default                   |
+| ------------------ | -------------------------------------------- | ------------------------- |
+| `MODEL_PORT`       | Internal port Flask listens on               | `8081`                    |
+| `MODEL_URL`        | Public URL of the model artifact             | set in docker-compose.yml |
+| `PREPROCESSOR_URL` | Public URL of the preprocessor artifact      | set in docker-compose.yml |
+| `MODEL_DIR`        | Directory for downloaded/mounted model files | `/root/sms/output`        |
+
+
+All variables are mentioned and configured in the `.env` file.
+
 
 Example `.env`:
 
@@ -60,7 +80,7 @@ Example `.env`:
 IMAGE_FRONTEND=ghcr.io/doda25-team5/sms-frontend
 IMAGE_FRONTEND_TAG=latest
 
-IMAGE_BACKEND=ghcr.io/doda25-team5/model-service
+IMAGE_BACKEND=ghcr.io/doda25-team5/sms-backend
 IMAGE_BACKEND_TAG=latest
 
 MODEL_DIR=./model-data
