@@ -71,7 +71,7 @@ Defining the purpose of a few variables:
 | `MODEL_DIR`        | Directory for downloaded/mounted model files | `/root/sms/output`        |
 
 
-All variables are mentioned and configured in the `.env` file.
+All variables are mentioned and configured in the `.env` file. Create a `.env` file next to the Dockerfile. 
 
 
 Example `.env`:
