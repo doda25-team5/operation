@@ -1,28 +1,28 @@
-
 services:
   model-service:
-    image: ghcr.io/doda25-team5/sms-backend:${IMAGE_TAG:-latest}
+    image: "${IMAGE_BACKEND}:${IMAGE_BACKEND_TAG}"
     container_name: model-service
     environment:
-      - MODEL_DIR=/root/sms/output
-      - MODEL_FILENAME=${MODEL_FILENAME:-model.joblib}
-      - MODEL_URL=${MODEL_URL:-https://github.com/doda25-team5/model-service/releases/download/test-f9/model.joblib}
-      - PREPROCESSOR_URL=${PREPROCESSOR_URL:-https://github.com/doda25-team5/model-service/releases/download/test-f9/preprocessor.joblib}
-      - MODEL_PORT=${MODEL_PORT:-8081}
+      - MODEL_DIR=${MODEL_DIR}
+      - MODEL_FILENAME=${MODEL_FILENAME}
+      - PREPROCESSOR_FILENAME=${PREPROCESSOR_FILENAME}
+      - MODEL_URL=${MODEL_URL}
+      - PREPROCESSOR_URL=${PREPROCESSOR_URL}
+      - MODEL_PORT=${MODEL_PORT}
     volumes:
       - ./model-data:/root/sms/output
     expose:
-      - "${MODEL_PORT:-8081}"          
+      - "${MODEL_PORT}"
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/doda25-team5/sms-frontend:${IMAGE_TAG:-latest}
+    image: "${IMAGE_FRONTEND}:${IMAGE_FRONTEND_TAG}"
     container_name: frontend
     ports:
-      - "${FRONTEND_HOST_PORT:-8080}:8080"
+      - "${FRONTEND_HOST_PORT}:8080"
     environment:
-      - MODEL_HOST=http://model-service:${MODEL_PORT:-8081}
-      - SERVER_PORT=8080
+      - MODEL_HOST=http://model-service:${MODEL_PORT}
+      - SERVER_PORT=${SERVER_PORT}
     depends_on:
       - model-service
     restart: unless-stopped
