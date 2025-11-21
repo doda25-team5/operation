@@ -1,6 +1,6 @@
 services:
   model-service:
-    image: "${IMAGE_BACKEND}:${IMAGE_BACKEND_TAG}"
+    image: "ghcr.io/doda25-team5/sms-backend:${IMAGE_BACKEND_TAG}"
     container_name: model-service
     environment:
       - MODEL_DIR=${MODEL_DIR}
@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: "${IMAGE_FRONTEND}:${IMAGE_FRONTEND_TAG}"
+    image: "ghcr.io/doda25-team5/sms-frontend:${IMAGE_FRONTEND_TAG}"
     container_name: frontend
     ports:
       - "${FRONTEND_HOST_PORT}:8080"
