@@ -71,28 +71,23 @@ Defining the purpose of a few variables:
 | `MODEL_DIR`        | Directory for downloaded/mounted model files | `/root/sms/output`        |
 
 
-All variables are mentioned and configured in the `.env` file. Create a `.env` file next to the Dockerfile. 
-
+All variables are mentioned and configured in the `.env` file.
 
 Example `.env`:
 
 ```bash
-IMAGE_FRONTEND=ghcr.io/doda25-team5/sms-frontend
-IMAGE_FRONTEND_TAG=latest
 
-IMAGE_BACKEND=ghcr.io/doda25-team5/sms-backend
 IMAGE_BACKEND_TAG=latest
-
-MODEL_DIR=./model-data
+IMAGE_FRONTEND_TAG=latest
+MODEL_DIR=/root/sms/output
 MODEL_FILENAME=model.joblib
 PREPROCESSOR_FILENAME=preprocessor.joblib
-
-MODEL_URL=https://example/model.joblib
-PREPROCESSOR_URL=https://example/preprocessor.joblib
-
+MODEL_URL=https://github.com/doda25-team5/model-service/releases/download/test-f9/model.joblib
+PREPROCESSOR_URL=https://github.com/doda25-team5/model-service/releases/download/test-f9/preprocessor.joblib
 MODEL_PORT=8081
-SERVER_PORT=8080
 FRONTEND_HOST_PORT=8080
+SERVER_PORT=8080
+
 ```
 
 
