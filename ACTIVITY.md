@@ -15,6 +15,6 @@ Implemented Feature 1 and 2. Due to the fact that those functionalities were the
 Implemented F8 for both the app and model-service repositories, adding automated container image build-and-release workflows.
 I also implemented F11 in the lib-version repository, adding automated stable releases, pre-releases, and version bumping.
 
-#### Priyansh https://github.com/doda25-team5/operation/pull/1 https://github.com/doda25-team5/model-service/pull/5
+#### Priyansh https://github.com/doda25-team5/operation/pull/1, https://github.com/doda25-team5/model-service/pull/5
 Worked on Features 7 and 10. Set up the operation repo, cleaned up the Docker Compose setup, added .env support, linked the frontend and model-service images properly, and updated the configuration so everything runs smoothly together with the right environment variables.
 
