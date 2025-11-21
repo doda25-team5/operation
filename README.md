@@ -47,37 +47,34 @@ docker compose down
 
 By default, the Compose file uses the **`latest`** image tag.
 
-To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_TAG` environment variable when running Compose:
+
+To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_FRONTEND_TAG` or `IMAGE_BACKEND_TAG` environment variable in the .env when running Compose:
+
+
+## ⚙️ Environment Variables in .env
+All variables are configured in the `.env` file.
+
+Example `.env`:
 
 ```bash
-IMAGE_TAG=v1.0.2 docker compose up --pull always
+IMAGE_FRONTEND=ghcr.io/doda25-team5/sms-frontend
+IMAGE_FRONTEND_TAG=latest
+
+IMAGE_BACKEND=ghcr.io/doda25-team5/model-service
+IMAGE_BACKEND_TAG=latest
+
+MODEL_DIR=./model-data
+MODEL_FILENAME=model.joblib
+PREPROCESSOR_FILENAME=preprocessor.joblib
+
+MODEL_URL=https://example/model.joblib
+PREPROCESSOR_URL=https://example/preprocessor.joblib
+
+MODEL_PORT=8081
+SERVER_PORT=8080
+FRONTEND_HOST_PORT=8080
 ```
 
-
-
-## ⚙️ Environment Variables
-
-### Frontend
-| Variable      | Purpose                                    | Default                     |
-| ------------- | ------------------------------------------ | --------------------------- |
-| `MODEL_HOST`  | URL of model-service inside Docker network | `http://model-service:8081` |
-| `SERVER_PORT` | Internal port the frontend binds to        | `8080`                      |
-
-
-### Model-Service
-| Variable           | Purpose                                      | Default                   |
-| ------------------ | -------------------------------------------- | ------------------------- |
-| `MODEL_PORT`       | Internal port Flask listens on               | `8081`                    |
-| `MODEL_URL`        | Public URL of the model artifact             | set in docker-compose.yml |
-| `PREPROCESSOR_URL` | Public URL of the preprocessor artifact      | set in docker-compose.yml |
-| `MODEL_DIR`        | Directory for downloaded/mounted model files | `/root/sms/output`        |
-
-Override Example:
-```bash
-MODEL_URL="https://example/model.joblib" \
-PREPROCESSOR_URL="https://example/preprocessor.joblib" \
-docker compose up -d
-```
 
 ---
 
@@ -88,8 +85,14 @@ Open:
 ```bash
 http://localhost:8080/sms
 ```
-
 Submit an SMS message and verify the prediction result.
+
+## Check the version library
+
+```bash
+http://localhost:8080/lib-version
+```
+
 
 ## Related Repositories
 
