@@ -1,5 +1,6 @@
-- hosts: all
+- hosts: nodes
   become: yes
   tasks:
-    - name: test node provisioning
-      ping:
+    - name: test worker task
+      debug:
+        msg: "test worker"

@@ -1,5 +1,6 @@
-- hosts: all
+- hosts: ctrl
   become: yes
   tasks:
-    - name: test ctrl provisioning
-      ping:
+    - name: test controller task
+      debug:
+        msg: "test controller"
