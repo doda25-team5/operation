@@ -59,3 +59,13 @@
         value: '1'
         state: present
         reload: yes
+
+    # step 8
+    - name: manage /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
+        block: |
+          192.168.56.100 ctrl
+          192.168.56.101 node-1
+          192.168.56.102 node-2
