@@ -19,3 +19,21 @@
         path: /etc/fstab
         regexp: '^\S+\s+\S+\s+swap\s'
         state: absent
+
+    # step 6
+    - name: bridging capabilities for Kubernetes
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+
+    - name: load overlay module
+      modprobe:
+        name: overlay
+        state: present
+
+    - name: load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
