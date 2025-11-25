@@ -69,3 +69,29 @@
           192.168.56.100 ctrl
           192.168.56.101 node-1
           192.168.56.102 node-2
+
+      # step 9
+    - name: install APT transport and GPG dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+        state: present
+        update_cache: yes
+
+    - name: add Kubernetes APT repository GPG key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+        state: present
+
+    - name: add Kubernetes APT repository
+      apt_repository:
+        repo: "deb https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
+        filename: "kubernetes"
+        state: present
+
+    - name: update APT cache
+      apt:
+        update_cache: yes
