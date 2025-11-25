@@ -9,3 +9,13 @@
         key: "{{ lookup('file', item) }}"
       with_fileglob: 
         - "../keys/*.pub" 
+
+    # step 5
+    - name: disable SWAP
+      command: swapoff -a
+
+    - name: prevent SWAP re-mount on next boot
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\S+\s+\S+\s+swap\s'
+        state: absent
