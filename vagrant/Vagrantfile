@@ -1,0 +1,27 @@
+Vagrant.configure("2") do |config|
+    # worker nodes
+    workers = 2
+
+    # base system 
+    config.vm.box = "bento/ubuntu-24.04"
+
+    # controller node
+    config.vm.define "ctrl" do |node|
+        node.vm.hostname = "ctrl"
+        node.vm.provider "virtualbox" do |vb|
+            vb.memory=4096 # 4GB
+            vb.cpus=1
+        end
+    end
+
+    # worker nodes
+    (1..workers).each do |i|
+        config.vm.define "node-#{i}" do |node|
+            node.vm.hostname = "node-#{i}"
+            node.vm.provider "virtualbox" do |vb|
+                vb.memory=6144 # 6GB
+                vb.cpus=2
+            end
+        end
+    end
+end
