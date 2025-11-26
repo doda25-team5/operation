@@ -55,12 +55,5 @@ Vagrant.configure("2") do |config|
         }
       end
     end
-
-
-    config.vm.define "ctrl" do |node|
-        node.vm.provision "ansible" do |ansible|
-            ansible.playbook = "ansible/ctrl.yaml"
-        end
-    end
-
+  end
 end

@@ -1,17 +1,26 @@
+---
 - hosts: ctrl
   become: true
+
   vars:
-    #task 13
     api_server_ip: "192.168.56.100"
     pod_network_cidr: "10.244.0.0/16"
     admin_conf_path: "/etc/kubernetes/admin.conf"
 
   tasks:
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 13 — Check if control plane already exists
+    # ─────────────────────────────────────────────────────────────
     - name: Check for existing admin.conf
       ansible.builtin.stat:
         path: "{{ admin_conf_path }}"
       register: adminconf
 
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 13 — Initialize control plane only if not initialized
+    # ─────────────────────────────────────────────────────────────
     - name: Initialize Kubernetes control plane (kubeadm init) if needed
       ansible.builtin.command: >
         kubeadm init
@@ -21,57 +30,50 @@
       when: not adminconf.stat.exists
       args:
         creates: "{{ admin_conf_path }}"
-      register: kubeadm_init_result
+      register: kubeadm_init
 
 
-      #task 14
-    - name: Ensure vagrant .kube exists
-      file:
+    # ─────────────────────────────────────────────────────────────
+    # STEP 14 — Configure kubeconfig for vagrant and host
+    # ─────────────────────────────────────────────────────────────
+    - name: Ensure /home/vagrant/.kube exists
+      ansible.builtin.file:
         path: /home/vagrant/.kube
         state: directory
         owner: vagrant
         group: vagrant
         mode: "0755"
 
-    - name: Copy admin.conf to vagrant kubeconfig if present
-      copy:
+    - name: Copy admin.conf to vagrant kubeconfig
+      ansible.builtin.copy:
         src: "{{ admin_conf_path }}"
         dest: /home/vagrant/.kube/config
         remote_src: yes
         owner: vagrant
         group: vagrant
         mode: "0644"
-      when: adminconf.stat.exists or kubeadm_init_result.changed #--
+      when: adminconf.stat.exists or kubeadm_init.changed
 
-    - name: Copy admin.conf to shared /vagrant for host access
-      copy:
+    - name: Copy admin.conf to shared folder for host access
+      ansible.builtin.copy:
         src: "{{ admin_conf_path }}"
         dest: /vagrant/admin.conf
         remote_src: yes
-        owner: vagrant
-        group: vagrant
         mode: "0644"
       when: adminconf.stat.exists
 
-    # - name: Ensure vagrant/admin.conf is gitignored (repo-side)
-    #   lineinfile:
-    #     path: "{{ playbook_dir }}/../../.gitignore"
-    #     regexp: '(^|\\n)vagrant/admin.conf\\s*$'
-    #     line: 'vagrant/admin.conf'
-    #     insertafter: EOF
-    #   delegate_to: localhost
-    #   run_once: true
-    #   when: adminconf.stat.exists
-     
-      #task 15
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 15 — Install Flannel CNI
+    # ─────────────────────────────────────────────────────────────
     - name: Download flannel manifest
-      get_url:
+      ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/flannel-io/flannel/v0.26.7/Documentation/kube-flannel.yml
         dest: /tmp/kube-flannel.yml
         mode: '0644'
 
-    - name: Ensure --iface=eth1 is present (idempotent)
-      lineinfile:
+    - name: Ensure --iface=eth1 is present
+      ansible.builtin.lineinfile:
         path: /tmp/kube-flannel.yml
         regexp: '^\s*- --iface=.*'
         line: '        - --iface=eth1'
@@ -79,14 +81,15 @@
         state: present
 
     - name: Apply flannel manifest
-      command: kubectl apply -f /tmp/kube-flannel.yml
+      ansible.builtin.command: kubectl apply -f /tmp/kube-flannel.yml
       environment:
         KUBECONFIG: "{{ admin_conf_path }}"
       register: flannel_apply
       changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
 
     - name: Wait for kube-flannel daemonset rollout
-      command: kubectl -n kube-flannel rollout status daemonset/kube-flannel-ds --timeout=300s
+      ansible.builtin.command: >
+        kubectl -n kube-flannel rollout status daemonset/kube-flannel-ds --timeout=300s
       environment:
         KUBECONFIG: "{{ admin_conf_path }}"
       register: rollout
@@ -95,7 +98,8 @@
       until: rollout.rc == 0
 
     - name: Wait for CoreDNS to be Running
-      shell: kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[*].status.phase}'
+      ansible.builtin.shell: >
+        kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[*].status.phase}'
       environment:
         KUBECONFIG: "{{ admin_conf_path }}"
       register: dns_status
@@ -103,54 +107,63 @@
       delay: 5
       until: "'Running' in dns_status.stdout"
 
-    #task 16
-    #https://deploy-preview-1750--helm-merge.netlify.app/docs/intro/install/#from-apt-debianubuntu -> helm-debian for ubuntu
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 16 + 17 — Install Helm and helm-diff plugin (optional)
+    # ─────────────────────────────────────────────────────────────
     - name: Ensure prerequisite packages (gpg, curl, apt-transport-https) are installed
       ansible.builtin.apt:
-        name: 
+        name:
           - gpg
           - curl
           - apt-transport-https
         state: present
-      become: true
 
-    - name: Download and Register Helm GPG key from Buildkite
+    - name: Download and register Helm GPG key
       ansible.builtin.shell: |
-        curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+        curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey \
+        | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
       args:
-        # use creates to ensure this task only runs once and is idempotent
         creates: /usr/share/keyrings/helm.gpg
-      become: true
 
-    - name: Add Helm apt repository (using the new Buildkite source)
+    - name: Add Helm apt repository
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
         state: present
         filename: helm-stable-debian
-      become: true
 
-    - name: Update apt cache and install Helm
+    - name: Install Helm
       ansible.builtin.apt:
         name: helm
         state: present
         update_cache: yes
-      become: true
 
-
-    #task 17
-    - name: Ensure git is installed (--required for helm-diff plugin)
+    - name: Ensure git is installed
       ansible.builtin.apt:
         name: git
         state: present
-      become: true
 
     - name: Install helm-diff plugin for vagrant user
       ansible.builtin.command:
         cmd: helm plugin install https://github.com/databus23/helm-diff
-      become: true
       become_user: vagrant
       environment:
         HELM_DATA_HOME: /home/vagrant/.local/share/helm
       args:
-
         creates: /home/vagrant/.local/share/helm/plugins/helm-diff
+
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 19 — Generate join command (AFTER control plane is ready)
+    # ─────────────────────────────────────────────────────────────
+    - name: Generate kubeadm join command
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: kubeadm_join_cmd
+      when: adminconf.stat.exists   # ensures init finished
+
+    - name: Save join command to shared folder
+      ansible.builtin.copy:
+        dest: /vagrant/kube_join_cmd.sh
+        content: "{{ kubeadm_join_cmd.stdout }}"
+        mode: '0755'
+      when: adminconf.stat.exists   # ensures init finished
