@@ -1,0 +1,114 @@
+- hosts: all
+  become: true
+  vars:
+    kubeconfig_path: "???" #TODO -- waiting on previous steps
+
+  tasks:
+
+    # STEP 20 -> Install MetalLB
+    - name: Apply MetalLB native CRD
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: metallb-native.yaml
+
+    # STEP 20 -> IPAddressPool
+    - name: Create MetalLB IPAddressPool
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: metallb-ipaddresspool.yaml
+
+    # STEP 20 -> L2Advertisement
+    - name: Create MetalLB L2Advertisement
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: metallb-l2advertisement.yaml
+
+    # STEP 20 -> Wait for MetalLB readiness
+    - name: Wait for MetalLB controller to be ready
+      ansible.builtin.command: 
+        cmd:  kubectl --kubeconfig {{ kubeconfig_path }} wait 
+              -n metallb-system 
+              -l app=metallb,component=controller 
+              --for=condition=ready pod 
+              --timeout=60s
+       
+    - name: Wait for MetalLB speakers to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait
+              -n metallb-system
+              -l app=metallb,component=speaker
+              --for=condition=ready pod
+              --timeout=60s
+
+    # STEP 21 -> Install Ingress-NGINX
+
+    - name: Add ingress-nginx Helm repo
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+
+    - name: Install ingress-nginx via Helm
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig_path }}"
+        values:
+          controller:
+            service:
+              loadBalancerIP: "192.168.56.90"
+
+    - name: Wait for ingress controller pod to become ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait
+              -n ingress-nginx
+              -l app.kubernetes.io/component=controller
+              --for=condition=ready pod
+              --timeout=60s
+
+    # STEP 22 -> Install Kubernetes Dashboard
+
+    - name: Add kubernetes-dashboard Helm repo
+      kubernetes.core.helm_repository:
+        name: kubernetes-dashboard
+        repo_url: https://kubernetes.github.io/dashboard/
+
+    - name: Install Kubernetes Dashboard via Helm
+      kubernetes.core.helm:
+        name: kubernetes-dashboard
+        chart_ref: kubernetes-dashboard/kubernetes-dashboard
+        release_namespace: kubernetes-dashboard
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig_path }}"
+
+    - name: Apply Dashboard ServiceAccount
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: dashboard-serviceaccount.yaml
+        state: present
+
+    - name: Apply Dashboard ClusterRoleBinding
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: dashboard-clusterrolebinding.yaml
+        state: present
+
+    - name: Apply Dashboard Ingress
+      ansible.builtin.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: dashboard-ingress.yaml
+        state: present
+
+    - name: Wait for Dashboard pods to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait
+              -n kubernetes-dashboard
+              --for=condition=ready pod
+              --timeout=60s
+              -l k8s-app=kubernetes-dashboard
+
+
