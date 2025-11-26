@@ -1,37 +1,59 @@
+N = 2  # number of worker nodes
+
 Vagrant.configure("2") do |config|
-    # worker nodes
-    workers = 2
+  # Control node
+  config.vm.define "ctrl" do |ctrl|
+    ctrl.vm.box = "bento/ubuntu-24.04"
+    ctrl.vm.box_version = "202510.26.0"
+    ctrl.vm.hostname = "ctrl"
 
-    # base system 
-    config.vm.box = "bento/ubuntu-24.04"
-
-    # controller node
-    config.vm.define "ctrl" do |node|
-        node.vm.hostname = "ctrl"
-        node.vm.network "private_network", ip: "192.168.56.100"
-        node.vm.provider "virtualbox" do |vb|
-            vb.memory=4096 # 4GB
-            vb.cpus=1
-        end
+    ctrl.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+      v.cpus = 2
     end
 
-    # worker nodes
-    (1..workers).each do |i|
-        config.vm.define "node-#{i}" do |node|
-            node.vm.hostname = "node-#{i}"
-            node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
-            node.vm.provider "virtualbox" do |vb|
-                vb.memory=6144 # 6GB
-                vb.cpus=2
-            end
-        end
+    ctrl.vm.network "private_network", ip: "192.168.56.100"
+
+    # General playbook (runs first)
+    ctrl.vm.provision :ansible do |a|
+      a.compatibility_mode = "2.0"
+      a.playbook = "ansible/general.yaml"
     end
-    # run ansible on all machines
-    config.vm.provision "ansible" do |ansible|
-        ansible.playbook = "ansible/general.yaml"
-        # passing worker count to ansible
-        ansible.extra_vars = {
-            worker_count: workers
+
+    # Controller-specific playbook (runs after)
+    ctrl.vm.provision :ansible do |a|
+      a.compatibility_mode = "2.0"
+      a.playbook = "ansible/ctrl.yaml"
+    end
+  end
+
+  # Worker nodes
+  (1..N).each do |i|
+    config.vm.define "node-#{i}" do |node|
+      node.vm.box = "bento/ubuntu-24.04"
+      node.vm.box_version = "202510.26.0"
+      node.vm.hostname = "node-#{i}"
+
+      node.vm.provider "virtualbox" do |v|
+        v.memory = 2048
+        v.cpus = 2
+      end
+
+      node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
+
+      # General playbook (common to all nodes)
+      node.vm.provision :ansible do |a|
+        a.compatibility_mode = "2.0"
+        a.playbook = "ansible/general.yaml"
+      end
+
+      # Worker-specific playbook
+      node.vm.provision :ansible do |a|
+        a.playbook = "ansible/node.yaml"
+        a.groups = {
+          "workers" => ["node-1", "node-2"]
         }
+      end
     end
+  end
 end

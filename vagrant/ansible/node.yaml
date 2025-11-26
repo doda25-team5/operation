@@ -1,5 +1,15 @@
-- hosts: all
-  become: yes
+---
+- name: Configure worker node
+  hosts: workers
+  become: true
+
   tasks:
-    - name: test node provisioning
-      ping:
+    - name: Ensure kubelet is enabled (auto-start on boot)
+      ansible.builtin.service:
+        name: kubelet
+        enabled: true
+
+    - name: Ensure kubelet is started
+      ansible.builtin.service:
+        name: kubelet
+        state: started

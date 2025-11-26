@@ -1,5 +1,26 @@
-- hosts: all
-  become: yes
+---
+- name: Configure control-plane node
+  hosts: ctrl
+  become: true
+
   tasks:
-    - name: test ctrl provisioning
-      ping:
+    - name: Enable kubelet service (auto-start on boot)
+      ansible.builtin.service:
+        name: kubelet
+        enabled: true
+    - name: Initialize Kubernetes control plane
+      ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      args:
+        creates: /etc/kubernetes/admin.conf
+    - name: Generate kubeadm join command for workers
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: kubeadm_join_cmd
+    - name: Save join command to shared folder
+      ansible.builtin.copy:
+        dest: /vagrant/kube_join_cmd.sh
+        content: "{{ kubeadm_join_cmd.stdout }}"
+        mode: '0755'
+    - name: Start kubelet after kubeadm init
+      ansible.builtin.service:
+        name: kubelet
+        state: started
