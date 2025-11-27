@@ -26,12 +26,6 @@ Vagrant.configure("2") do |config|
       a.playbook = "ansible/ctrl.yaml"
     end
 
-    #Controller finalization
-    ctrl.vm.provision :ansible do |a|
-      a.compatibility_mode = "2.0"
-      a.playbook = "ansible/finalization/finalization.yml"
-    end
-
   end
 
   # Worker nodes
