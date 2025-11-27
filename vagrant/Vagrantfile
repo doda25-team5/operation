@@ -1,58 +1,66 @@
-N = 2  # number of worker nodes
+# Vagrantfile - env-driven minimal version
+# Usage: export WORKERS=3 CTRL_CPUS=2 CTRL_MEM=4096 WORKER_CPUS=2 WORKER_MEM=6144
+workers = ENV.fetch("WORKERS", "2").to_i
+ctrl_cpus = ENV.fetch("CTRL_CPUS", "2").to_i
+ctrl_mem  = ENV.fetch("CTRL_MEM", "4096").to_i
+worker_cpus = ENV.fetch("WORKER_CPUS", "2").to_i
+worker_mem  = ENV.fetch("WORKER_MEM", "6144").to_i
 
 Vagrant.configure("2") do |config|
-  # Control node
+  # keep SSH keys stable / do not replace with generated key
+  config.ssh.insert_key = false
+
+  # controller
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.box = "bento/ubuntu-24.04"
     ctrl.vm.box_version = "202510.26.0"
     ctrl.vm.hostname = "ctrl"
 
     ctrl.vm.provider "virtualbox" do |v|
-      v.memory = 2048
-      v.cpus = 2
+      v.memory = ctrl_mem
+      v.cpus = ctrl_cpus
     end
 
     ctrl.vm.network "private_network", ip: "192.168.56.100"
 
-    # General playbook (runs first)
+    # general then ctrl playbooks
     ctrl.vm.provision :ansible do |a|
       a.compatibility_mode = "2.0"
       a.playbook = "ansible/general.yaml"
+      a.extra_vars = { worker_count: workers }
     end
 
-    # Controller-specific playbook (runs after)
     ctrl.vm.provision :ansible do |a|
       a.compatibility_mode = "2.0"
       a.playbook = "ansible/ctrl.yaml"
+      a.extra_vars = { worker_count: workers }
     end
   end
 
-  # Worker nodes
-  (1..N).each do |i|
+  # workers loop
+  (1..workers).each do |i|
     config.vm.define "node-#{i}" do |node|
       node.vm.box = "bento/ubuntu-24.04"
       node.vm.box_version = "202510.26.0"
       node.vm.hostname = "node-#{i}"
 
       node.vm.provider "virtualbox" do |v|
-        v.memory = 2048
-        v.cpus = 2
+        v.memory = worker_mem
+        v.cpus = worker_cpus
       end
 
       node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
 
-      # General playbook (common to all nodes)
       node.vm.provision :ansible do |a|
         a.compatibility_mode = "2.0"
         a.playbook = "ansible/general.yaml"
+        a.extra_vars = { worker_count: workers, this_worker: "node-#{i}" }
       end
 
-      # Worker-specific playbook
       node.vm.provision :ansible do |a|
+        a.compatibility_mode = "2.0"
         a.playbook = "ansible/node.yaml"
-        a.groups = {
-          "workers" => ["node-1", "node-2"]
-        }
+        a.extra_vars = { worker_count: workers, this_worker: "node-#{i}" }
       end
     end
   end
