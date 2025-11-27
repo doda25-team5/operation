@@ -9,3 +9,158 @@
         key: "{{ lookup('file', item) }}"
       with_fileglob: 
         - "../keys/*.pub" 
+
+    # step 5
+    - name: disable SWAP
+      command: swapoff -a
+
+    - name: prevent SWAP re-mount on next boot
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\S+\s+\S+\s+swap\s'
+        state: absent
+
+    # step 6
+    - name: bridging capabilities for Kubernetes
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+
+    - name: load overlay module
+      modprobe:
+        name: overlay
+        state: present
+
+    - name: load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    # step 7
+    - name: enable IPv4 forwarding
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        state: present
+        reload: yes
+
+    - name: enable bridged IPv4 iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: '1'
+        state: present
+        reload: yes
+
+    - name: enable bridged IPv6 iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-ip6tables
+        value: '1'
+        state: present
+        reload: yes
+
+    # step 8
+    - name: manage /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
+        block: |
+          192.168.56.100 ctrl
+          192.168.56.101 node-1
+          192.168.56.102 node-2
+
+      # step 9
+    - name: install APT transport and GPG dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+        state: present
+        update_cache: yes
+
+    - name: add Kubernetes APT repository GPG key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+        state: present
+
+    - name: add Kubernetes APT repository
+      apt_repository:
+        repo: "deb https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
+        filename: "kubernetes"
+        state: present
+
+    - name: update APT cache
+      apt:
+        update_cache: yes
+
+      # step 10
+    - name: Install container runtime 
+      ansible.builtin.apt:
+        name:
+          - containerd
+          - runc
+        state: present
+        update_cache: yes
+    - name: Install Kubernetes components
+      ansible.builtin.apt:
+        name:
+          - kubeadm=1.32.4-*
+          - kubelet=1.32.4-*
+          - kubectl=1.32.4-*
+        state: present
+        allow_downgrades: true
+      # step 11
+    - name: Ensure containerd directory exists
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Generate default containerd configuration
+      ansible.builtin.command: containerd config default
+      register: containerd_default_config
+
+    - name: Write containerd default config to file
+      ansible.builtin.copy:
+        dest: /etc/containerd/config.toml
+        content: "{{ containerd_default_config.stdout }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Disable AppArmor in containerd config
+      ansible.builtin.lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)disable_apparmor ='
+        line: '    disable_apparmor = true'
+
+    - name: Update pause sandbox image
+      ansible.builtin.lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)sandbox_image ='
+        line: '    sandbox_image = "registry.k8s.io/pause:3.10"'
+
+    - name: Enable SystemdCgroup in runc options
+      ansible.builtin.lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)SystemdCgroup ='
+        line: '        SystemdCgroup = true'
+
+    - name: Restart containerd
+      ansible.builtin.service:
+        name: containerd
+        state: restarted
+        enabled: true
+     #step 12
+    - name: Enable kubelet service (auto-start on boot)
+      ansible.builtin.service:
+        name: kubelet
+        enabled: true
+        state: started
+    
+    
