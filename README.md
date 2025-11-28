@@ -114,3 +114,54 @@ http://localhost:8080/lib-version
 * **`app`**: Contains the Spring Boot frontend application and its Dockerfile.
 * **`model-service`**: Contains the Python backend application and its Dockerfile.
 * **`lib-version`**: Version-aware Maven Library
+
+## Accessing the Kubernetes Cluster and Services
+After running the finalization.yml playbook, the Kubernetes cluster exposes its services through MetalLB and the Ingress-NGINX controller.
+
+### Kubernetes Dashboard
+
+The dashboard is exposed through an Ingress with the hostname:
+
+```bash
+dashboard.local
+```
+
+1. Add to /etc/hosts:
+   
+```bash
+192.168.56.90  dashboard.local
+```
+
+2. Open in your browser:
+   
+```bash
+https://dashboard.local
+```
+
+### Ingress-NGINX Controller
+
+The Ingress controller receives the MetalLB external IP:
+
+```bash
+192.168.56.90
+```
+
+
+### MetalLB IPAddressPool Manifest
+
+Pool:
+
+```bash
+ - 192.168.56.90-192.168.56.99
+```
+
+### Verification Commands
+
+```bash
+kubectl get pods -A
+kubectl get svc -A
+kubectl get ingress -A
+```
+
+
+
