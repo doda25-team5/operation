@@ -32,3 +32,6 @@ Worked on general.yaml (steps 5-9), preparing all machines for Kubernetes. This 
 
 #### Priyansh https://github.com/doda25-team5/operation/pull/4, https://github.com/doda25-team5/operation/pull/7
 Worked on ctrl.yaml primarily (steps 13-17) i.e., initialized the Kubernetes cluster using kubeadm, configured kubectl access, installed the flannel Pod network with ```--iface=eth1``` for the correct NIC, and installed Helm along with the helm-diff plugin.
+
+#### Maja https://github.com/doda25-team5/operation/pull/3
+Implemented features 1-4 (steps). Created the VMs, set up the networking, provision with Ansible and registered the public SSH keys.
