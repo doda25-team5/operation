@@ -33,6 +33,12 @@
       register: kubeadm_init
 
 
+    - name: Re-check admin.conf after kubeadm init
+      ansible.builtin.stat:
+        path: "{{ admin_conf_path }}"
+      register: adminconf_after
+
+
     # ─────────────────────────────────────────────────────────────
     # STEP 14 — Configure kubeconfig for vagrant and host
     # ─────────────────────────────────────────────────────────────
@@ -52,15 +58,18 @@
         owner: vagrant
         group: vagrant
         mode: "0644"
-      when: adminconf.stat.exists or kubeadm_init.changed
+      when: adminconf_after.stat.exists or kubeadm_init.changed
 
-    - name: Copy admin.conf to shared folder for host access
-      ansible.builtin.copy:
-        src: "{{ admin_conf_path }}"
+    - name: Copy admin.conf to shared /vagrant for host access
+      copy:
+        src: /etc/kubernetes/admin.conf
         dest: /vagrant/admin.conf
         remote_src: yes
+        owner: vagrant
+        group: vagrant
         mode: "0644"
-      when: adminconf.stat.exists
+      when: adminconf_after.stat.exists
+
 
 
     # ─────────────────────────────────────────────────────────────
@@ -159,11 +168,11 @@
     - name: Generate kubeadm join command
       ansible.builtin.command: kubeadm token create --print-join-command
       register: kubeadm_join_cmd
-      when: adminconf.stat.exists   # ensures init finished
+      when: adminconf_after.stat.exists   # ensures init finished
 
     - name: Save join command to shared folder
       ansible.builtin.copy:
         dest: /vagrant/kube_join_cmd.sh
         content: "{{ kubeadm_join_cmd.stdout }}"
         mode: '0755'
-      when: adminconf.stat.exists   # ensures init finished
+      when: adminconf_after.stat.exists   # ensures init finished
