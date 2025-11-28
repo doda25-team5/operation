@@ -3,7 +3,8 @@ kind: Ingress
 metadata:
   name: dashboard-ingress
   namespace: kubernetes-dashboard
-  annotations: nginx.ingress.kubernetes.io/backend-protocol:"HTTPS"
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   ingressClassName: nginx
   rules:
@@ -14,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kubernetes-dashboard
+                name: kubernetes-dashboard-kong-proxy
                 port:
-                  number: 443
+                  number: 443                          
