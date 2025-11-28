@@ -19,3 +19,7 @@ I also implemented F11 in the lib-version repository, adding automated stable re
 #### Priyansh https://github.com/doda25-team5/operation/pull/1, https://github.com/doda25-team5/model-service/pull/5
 Worked on Features 7 and 10. Set up the operation repo, cleaned up the Docker Compose setup, added .env support, linked the frontend and model-service images properly, and updated the configuration so everything runs smoothly together with the right environment variables.
 
+## WEEK 3 - Assignment 2
+
+#### Priyansh https://github.com/doda25-team5/operation/pull/4, https://github.com/doda25-team5/operation/pull/7
+Worked on ctrl.yaml primarily (steps 13-17) i.e., initialized the Kubernetes cluster using kubeadm, configured kubectl access, installed the flannel Pod network with ```--iface=eth1``` for the correct NIC, and installed Helm along with the helm-diff plugin.
