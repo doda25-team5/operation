@@ -20,7 +20,8 @@ I also implemented F11 in the lib-version repository, adding automated stable re
 Worked on Features 7 and 10. Set up the operation repo, cleaned up the Docker Compose setup, added .env support, linked the frontend and model-service images properly, and updated the configuration so everything runs smoothly together with the right environment variables.
 
 ## WEEK 3 - Assignment 2
-
+#### Erkin : https://github.com/doda25-team5/operation/pull/7
+Worked on the features 10 to 12 for the final project. Additionally in order to verify the step 12 worked, I had to add some initialization to the ctrl nodes to see if kubelet works. Additionally, each of us did the steps 1-12 on their which we decided as a team to learn better.
 #### Vedant: https://github.com/doda25-team5/operation/pull/7
 Worked on ctrl.yaml and node.yaml(steps 18-19). Implemented the worker-join logic so that each worker pulls the join command directly from the controller and only joins if it hasn’t already. I first check whether the worker has /etc/kubernetes/kubelet.conf; if not, I delegate the kubeadm token create --print-join-command call to the controller, capture the output, and then run that exact command on the worker to join the cluster safely and idempotently.
 
