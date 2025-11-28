@@ -21,5 +21,8 @@ Worked on Features 7 and 10. Set up the operation repo, cleaned up the Docker Co
 
 ## WEEK 3 - Assignment 2
 
+#### Vedant: https://github.com/doda25-team5/operation/pull/7
+Worked on ctrl.yaml and node.yaml(steps 18-19). Implemented the worker-join logic so that each worker pulls the join command directly from the controller and only joins if it hasn’t already. I first check whether the worker has /etc/kubernetes/kubelet.conf; if not, I delegate the kubeadm token create --print-join-command call to the controller, capture the output, and then run that exact command on the worker to join the cluster safely and idempotently.
+
 #### Priyansh https://github.com/doda25-team5/operation/pull/4, https://github.com/doda25-team5/operation/pull/7
 Worked on ctrl.yaml primarily (steps 13-17) i.e., initialized the Kubernetes cluster using kubeadm, configured kubectl access, installed the flannel Pod network with ```--iface=eth1``` for the correct NIC, and installed Helm along with the helm-diff plugin.
