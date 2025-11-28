@@ -21,7 +21,7 @@ Worked on Features 7 and 10. Set up the operation repo, cleaned up the Docker Co
 
 ## WEEK 3 - Assignment 2
 
-#### Erkin : https://github.com/doda25-team5/operation/pull/7
+#### Erkin : https://github.com/doda25-team5/operation/pull/6
 Worked on the features 10 to 12 for the final project. Additionally in order to verify the step 12 worked, I had to add some initialization to the ctrl nodes to see if kubelet works. Additionally, each of us did the steps 1-12 on their which we decided as a team to learn better.
 
 #### Vedant: https://github.com/doda25-team5/operation/pull/7
