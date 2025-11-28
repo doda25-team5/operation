@@ -1,0 +1,199 @@
+---
+# PREPARE PYTHON ENVIRONMENT + VENV (inside VM)
+- name: Setup python environment + venv for Ansible Kubernetes usage
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure vagrant user has passwordless sudo
+      lineinfile:
+        path: /etc/sudoers.d/vagrant-nopasswd
+        create: yes
+        mode: "0440"
+        line: "vagrant ALL=(ALL) NOPASSWD: ALL"
+        validate: "visudo -cf %s"
+      when: ansible_user == "vagrant"
+
+    - name: Install python3-pip and python3-venv
+      apt:
+        name:
+          - python3-pip
+          - python3-venv
+        state: present
+        update_cache: yes
+
+    - name: Create a Python venv for Ansible kubernetes collection
+      command: python3 -m venv /home/vagrant/.ansible-venv
+      args:
+        creates: /home/vagrant/.ansible-venv/bin/pip
+      become_user: vagrant
+
+    - name: Upgrade pip inside the venv
+      pip:
+        name: pip
+        state: latest
+        executable: /home/vagrant/.ansible-venv/bin/pip
+      become_user: vagrant
+
+    - name: Install kubernetes Python client inside the venv
+      pip:
+        name: kubernetes>=24.2.0
+        executable: /home/vagrant/.ansible-venv/bin/pip
+      become_user: vagrant
+
+    - name: Tell Ansible to use our venv Python interpreter from now on
+      set_fact:
+        ansible_python_interpreter: /home/vagrant/.ansible-venv/bin/python
+
+
+# Finalization: MetalLB + Ingress-NGINX + Dashboard
+- name: Finalization - MetalLB + Ingress-NGINX + Dashboard
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: /home/vagrant/.kube/config
+
+  tasks:
+      
+      #Copy files needed for MetalLB to VM
+    - name: Copy MetalLB CRD manifest
+      copy:
+        src: "{{ playbook_dir }}/metallb-native.yaml"
+        dest: /home/vagrant/metallb-native.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Copy MetalLB IPAddressPool manifest
+      copy:
+        src: "{{ playbook_dir }}/metallb-ipaddresspool.yaml"
+        dest: /home/vagrant/metallb-ipaddresspool.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Copy MetalLB L2Advertisement manifest
+      copy:
+        src: "{{ playbook_dir }}/metallb-l2advertisement.yaml"
+        dest: /home/vagrant/metallb-l2advertisement.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    # STEP 20 -> Install MetalLB
+
+    - name: Apply MetalLB native CRD
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/metallb-native.yaml
+
+    - name: Create MetalLB IPAddressPool
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/metallb-ipaddresspool.yaml
+
+    - name: Create MetalLB L2Advertisement
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/metallb-l2advertisement.yaml
+
+    - name: Wait for MetalLB controller to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n metallb-system -l app=metallb,component=controller --for=condition=ready pod --timeout=60s
+      register: _wait_ctrl
+      until: _wait_ctrl.rc == 0
+      retries: 15
+      delay: 10
+
+    - name: Wait for MetalLB speakers to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n metallb-system -l app=metallb,component=speaker --for=condition=ready pod --timeout=60s
+      register: _wait_speaker
+      until: _wait_speaker.rc == 0
+      retries: 15
+      delay: 10
+
+    # STEP 21 -> Install Ingress-NGINX
+
+    - name: Add ingress-nginx Helm repo
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+
+    - name: Install ingress-nginx via Helm
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig_path }}"
+        values:
+          controller:
+            service:
+              loadBalancerIP: "192.168.56.90"
+
+    #Copy files needed for Dashboard to VM
+
+    - name: Copy Dashboard ServiceAccount
+      copy:
+        src: "{{ playbook_dir }}/dashboard-serviceaccount.yaml"
+        dest: /home/vagrant/dashboard-serviceaccount.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Copy Dashboard ClusterRoleBinding
+      copy:
+        src: "{{ playbook_dir }}/dashboard-clusterrolebinding.yaml"
+        dest: /home/vagrant/dashboard-clusterrolebinding.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Copy Dashboard Ingress
+      copy:
+        src: "{{ playbook_dir }}/dashboard-ingress.yaml"
+        dest: /home/vagrant/dashboard-ingress.yaml
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    # STEP 22 -> Install Kubernetes Dashboard
+
+    - name: Add kubernetes dashboard Helm repo
+      kubernetes.core.helm_repository:
+        name: kubernetes-dashboard
+        repo_url: https://kubernetes.github.io/dashboard/
+
+    - name: Install Kubernetes Dashboard via Helm
+      kubernetes.core.helm:
+        name: kubernetes-dashboard
+        chart_ref: kubernetes-dashboard/kubernetes-dashboard
+        release_namespace: kubernetes-dashboard
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig_path }}" 
+
+    - name: Apply Dashboard ServiceAccount
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/dashboard-serviceaccount.yaml
+
+    - name: Apply Dashboard ClusterRoleBinding
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/dashboard-clusterrolebinding.yaml
+
+    - name: Apply Dashboard Ingress
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/dashboard-ingress.yaml
+
