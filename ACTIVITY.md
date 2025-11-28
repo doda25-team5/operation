@@ -35,3 +35,9 @@ Worked on ctrl.yaml primarily (steps 13-17) i.e., initialized the Kubernetes clu
 
 #### Maja https://github.com/doda25-team5/operation/pull/3
 Implemented features 1-4 (steps). Created the VMs, set up the networking, provision with Ansible and registered the public SSH keys.
+
+#### Jayran https://github.com/doda25-team5/operation/pull/8
+In steps 20–22, I finalized the Kubernetes cluster by installing MetalLB, the Nginx Ingress Controller, and the Kubernetes Dashboard.
+MetalLB was configured with a fixed IP range so LoadBalancer services receive stable external IPs (safe pool).
+Next, I deployed the Nginx Ingress Controller via Helm and assigned it a fixed IP (192.168.56.90) for routing incoming traffic.
+Finally, I installed the Kubernetes Dashboard using Helm, created an admin ServiceAccount with permissions, and exposed it through an Ingress at https://dashboard.local.
