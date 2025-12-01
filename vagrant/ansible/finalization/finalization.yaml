@@ -139,6 +139,17 @@
           controller:
             service:
               loadBalancerIP: "192.168.56.90"
+            admissionWebhooks:
+              enabled: false
+
+
+    - name: Wait for ingress-nginx controller to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n ingress-nginx -l app.kubernetes.io/component=controller --for=condition=ready pod --timeout=180s
+      register: _wait_ing_ctrl
+      until: _wait_ing_ctrl.rc == 0
+      retries: 20
+      delay: 10
 
     #Copy files needed for Dashboard to VM
 
