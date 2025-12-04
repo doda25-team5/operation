@@ -91,18 +91,6 @@
         kubeconfig: "{{ kubeconfig_path }}"
         src: /home/vagrant/metallb-native.yaml
 
-    - name: Create MetalLB IPAddressPool
-      kubernetes.core.k8s:
-        state: present
-        kubeconfig: "{{ kubeconfig_path }}"
-        src: /home/vagrant/metallb-ipaddresspool.yaml
-
-    - name: Create MetalLB L2Advertisement
-      kubernetes.core.k8s:
-        state: present
-        kubeconfig: "{{ kubeconfig_path }}"
-        src: /home/vagrant/metallb-l2advertisement.yaml
-
     - name: Wait for MetalLB controller to be ready
       ansible.builtin.command:
         cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n metallb-system -l app=metallb,component=controller --for=condition=ready pod --timeout=60s
@@ -118,6 +106,20 @@
       until: _wait_speaker.rc == 0
       retries: 15
       delay: 10
+
+    - name: Create MetalLB IPAddressPool
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/metallb-ipaddresspool.yaml
+
+    - name: Create MetalLB L2Advertisement
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        src: /home/vagrant/metallb-l2advertisement.yaml
+
+
 
     # STEP 21 -> Install Ingress-NGINX
 
@@ -137,6 +139,17 @@
           controller:
             service:
               loadBalancerIP: "192.168.56.90"
+            admissionWebhooks:
+              enabled: false
+
+
+    - name: Wait for ingress-nginx controller to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n ingress-nginx -l app.kubernetes.io/component=controller --for=condition=ready pod --timeout=180s
+      register: _wait_ing_ctrl
+      until: _wait_ing_ctrl.rc == 0
+      retries: 20
+      delay: 10
 
     #Copy files needed for Dashboard to VM
 
