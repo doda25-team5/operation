@@ -57,3 +57,6 @@ Worked on the grafana dashboards to make them working https://github.com/doda25-
 #### Jayran:
 Worked on fixing the last week's assignment on dashboards. Also worked independently on migrating from docker-compose to kubernetes.
 
+#### Vedant: https://github.com/doda25-team5/operation/pull/10
+Worked on creating endpoints for app and model-service to enable monitoring and updated the deployement files to ensure prometheus can access those endpoints. 
+
