@@ -1,0 +1,32 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.alerts.email.enabled }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: sms-alerts
+  labels:
+    release: prometheus  
+spec:
+  route:
+    groupBy: ["alertname"]
+    groupWait: 30s
+    groupInterval: 2m
+    repeatInterval: 4h
+    receiver: team-email
+    routes:
+      - matchers:
+          - name: severity
+            value: warning
+            matchType: =
+        receiver: team-email
+  receivers:
+    - name: team-email
+      emailConfigs:
+        - to: {{ .Values.monitoring.alerts.email.to | quote }}
+          from: {{ .Values.monitoring.alerts.email.from | quote }}
+          smarthost: {{ .Values.monitoring.alerts.email.smarthost | quote }} 
+          authUsername: {{ .Values.monitoring.alerts.email.username | quote }}
+          authPassword:
+            name: alertmanager-smtp
+            key: password
+          requireTLS: false
+{{- end }}

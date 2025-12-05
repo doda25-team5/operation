@@ -38,6 +38,14 @@ monitoring:
   exporter:
     image: ghcr.io/doda25-team5/sms-exporter
     tag: "0.1"
+  alerts:
+    email:
+      enabled: true
+      to: "test@local"
+      from: "alertmanager@local"
+      smarthost: "mailhog-smtp.tools.svc.cluster.local:1025"
+      username: ""
+      password: ""
 
 secrets:
   smtp_user: ""
