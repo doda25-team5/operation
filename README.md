@@ -162,7 +162,7 @@ kubectl get pods -A
 kubectl get svc -A
 kubectl get ingress -A
 ```
-
+## A3
 ### Steps for running the kubernetes cluster
 - minikube start driver=docker
 - minikube addons enable ingress
