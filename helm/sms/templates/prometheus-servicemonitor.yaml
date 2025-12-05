@@ -1,0 +1,18 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sms-backend-sm
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: sms-backend
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+  namespaceSelector:
+    any: true
+{{- end }}

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sms-frontend
+  labels:
+    app: sms-frontend
+spec:
+  replicas: {{ .Values.replicaCountFrontend }}
+  selector:
+    matchLabels:
+      app: sms-frontend
+  template:
+    metadata:
+      labels:
+        app: sms-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.frontend.service.port }}
+          name: http
+        envFrom:
+          - configMapRef:
+              name: sms-frontend-config

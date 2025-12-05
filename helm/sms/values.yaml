@@ -1,0 +1,44 @@
+replicaCountFrontend: 1
+replicaCountBackend: 1
+
+frontend:
+  image:
+    repository: ghcr.io/doda25-team5/sms-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+
+backend:
+  image:
+    repository: ghcr.io/doda25-team5/sms-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8081
+  model:
+    dir: "/root/sms/output"
+    filename: "model.joblib"
+    preproc_filename: "preprocessor.joblib"
+    url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
+    preproc_url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+
+initContainer:
+  enabled: false
+  enableHostPath: false
+  hostPath: /mnt/shared/model-data
+
+ingress:
+  enabled: true
+  host: sms.test.local
+  path: "/"
+
+monitoring:
+  enabled: true
+  exporter:
+    image: ghcr.io/doda25-team5/sms-exporter
+    tag: "0.1"
+
+secrets:
+  smtp_user: ""
+  smtp_pass: ""

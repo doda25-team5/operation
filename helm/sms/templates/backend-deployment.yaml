@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sms-backend
+  labels:
+    app: sms-backend
+spec:
+  replicas: {{ .Values.replicaCountBackend }}
+  selector:
+    matchLabels:
+      app: sms-backend
+  template:
+    metadata:
+      labels:
+        app: sms-backend
+    spec:
+    
+      {{- if .Values.initContainer.enabled }}
+      volumes:
+        - name: model-data
+          {{- if .Values.initContainer.enableHostPath }}
+          hostPath:
+            path: {{ .Values.initContainer.hostPath | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+
+      initContainers:
+        - name: model-downloader
+          image: curlimages/curl:7.88.1
+          command:
+            - sh
+            - -c
+            - >
+              mkdir -p {{ .Values.backend.model.dir }} &&
+              echo "Checking model..." &&
+              if [ ! -f {{ .Values.backend.model.dir }}/{{ .Values.backend.model.filename }} ]; then
+                echo "Downloading model...";
+                curl -fSL "{{ .Values.backend.model.url }}" -o {{ .Values.backend.model.dir }}/{{ .Values.backend.model.filename }};
+              fi &&
+              echo "Checking preprocessor..." &&
+              if [ ! -f {{ .Values.backend.model.dir }}/{{ .Values.backend.model.preproc_filename }} ]; then
+                echo "Downloading preprocessor...";
+                curl -fSL "{{ .Values.backend.model.preproc_url }}" -o {{ .Values.backend.model.dir }}/{{ .Values.backend.model.preproc_filename }};
+              fi
+          volumeMounts:
+            - name: model-data
+              mountPath: {{ .Values.backend.model.dir | quote }}
+      {{- end }}
+
+      # -----------------------------
+      # MAIN CONTAINERS
+      # -----------------------------
+      containers:
+        # BACKEND CONTAINER
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.service.port }}   
+              name: metrics
+              
+          envFrom:
+            - configMapRef:
+                name: sms-backend-config
+
+          {{- if .Values.initContainer.enabled }}
+          volumeMounts:
+            - name: model-data
+              mountPath: {{ .Values.backend.model.dir | quote }}
+          {{- end }}
+
+

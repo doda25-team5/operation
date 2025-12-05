@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sms-backend-config
+data:
+  MODEL_DIR: {{ .Values.backend.model.dir | quote }}
+  MODEL_FILENAME: "{{ .Values.backend.model.filename }}"
+  PREPROCESSOR_FILENAME: "{{ .Values.backend.model.preproc_filename }}"
+  MODEL_URL: "{{ .Values.backend.model.url }}"
+  PREPROCESSOR_URL: "{{ .Values.backend.model.preproc_url }}"
+  MODEL_PORT: "{{ .Values.backend.service.port }}"
