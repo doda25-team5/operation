@@ -48,6 +48,9 @@ Finally, I installed the Kubernetes Dashboard using Helm, created an admin Servi
 #### Erkin: 
 Worked on the first part of the assignment migrating from docker-compose to kubernetes. Also worked on creating the helm charts and the directory. This is the branch https://github.com/doda25-team5/operation/tree/current that  i worked on and this is the pull request that we created as a group https://github.com/doda25-team5/operation/pull/10.
 
+#### Nicolas
+Worked on enabling the alerting capabilities in Prometheus so that developers get warned through email https://github.com/doda25-team5/operation/pull/10.
+
 #### Maja:
 Worked on the grafana dashboards to make them working https://github.com/doda25-team5/operation/pull/10. Also fixed the dashboard to make dashboard.local available that was the part that was missing from last week's assignment.
 
