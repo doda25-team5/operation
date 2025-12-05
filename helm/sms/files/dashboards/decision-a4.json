@@ -1,0 +1,19 @@
+{
+"title": "Decision Support (minimal)",
+"panels": [
+{
+"type": "graph",
+"title": "Latency P95 (5m)",
+"targets": [
+{ "expr": "histogram_quantile(0.95, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "A" }
+]
+},
+{
+"type": "graph",
+"title": "Latency P50 (5m)",
+"targets": [
+{ "expr": "histogram_quantile(0.50, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "B" }
+]
+}
+]
+}

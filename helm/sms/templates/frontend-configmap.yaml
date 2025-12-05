@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sms-frontend-config
+data:
+  MODEL_HOST: "http://sms-backend-svc:{{ .Values.backend.service.port }}"
+  SERVER_PORT: "{{ .Values.frontend.service.port }}"
+  IMAGE_FRONTEND_TAG: "{{ .Values.frontend.image.tag }}"

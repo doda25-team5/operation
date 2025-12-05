@@ -1,0 +1,33 @@
+{
+"title": "App Metrics (minimal)",
+"panels": [
+{
+"type": "graph",
+"title": "Requests — rate (1m)",
+"targets": [
+{ "expr": "rate(sms_predictions_total[1m])", "refId": "A" }
+]
+},
+{
+"type": "graph",
+"title": "Requests — increase (5m)",
+"targets": [
+{ "expr": "increase(sms_predictions_total[5m])", "refId": "A" }
+]
+},
+{
+"type": "graph",
+"title": "Latency P95 (5m)",
+"targets": [
+{ "expr": "histogram_quantile(0.95, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "A" }
+]
+},
+{
+"type": "stat",
+"title": "Model file size (bytes)",
+"targets": [
+{ "expr": "sms_model_file_size_bytes", "refId": "A" }
+]
+}
+]
+}
