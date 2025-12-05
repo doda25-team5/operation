@@ -41,3 +41,16 @@ In steps 20–22, I finalized the Kubernetes cluster by installing MetalLB, the 
 MetalLB was configured with a fixed IP range so LoadBalancer services receive stable external IPs (safe pool).
 Next, I deployed the Nginx Ingress Controller via Helm and assigned it a fixed IP (192.168.56.90) for routing incoming traffic.
 Finally, I installed the Kubernetes Dashboard using Helm, created an admin ServiceAccount with permissions, and exposed it through an Ingress at https://dashboard.local.
+
+
+## WEEK 4 - Assignment 3
+
+#### Erkin: 
+Worked on the first part of the assignment migrating from docker-compose to kubernetes. Also worked on creating the helm charts and the directory. This is the branch https://github.com/doda25-team5/operation/tree/current that  i worked on and this is the pull request that we created as a group https://github.com/doda25-team5/operation/pull/10.
+
+#### Maja:
+Worked on the grafana dashboards to make them working https://github.com/doda25-team5/operation/pull/10. Also fixed the dashboard to make dashboard.local available that was the part that was missing from last week's assignment.
+
+#### Jayran:
+Worked on fixing the last week's assignment on dashboards. Also worked independently on migrating from docker-compose to kubernetes.
+
