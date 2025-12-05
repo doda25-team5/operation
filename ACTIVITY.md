@@ -60,3 +60,5 @@ Worked on fixing the last week's assignment on dashboards. Also worked independe
 #### Vedant: https://github.com/doda25-team5/operation/pull/10
 Worked on creating endpoints for app and model-service to enable monitoring and updated the deployement files to ensure prometheus can access those endpoints. 
 
+#### Priyansh: https://github.com/doda25-team5/operation/pull/10
+Worked independently on migration from docker to kubernetes and helm charts. Collaborated with Erkin and Jayran for this one. Then, I also worked on setting up grafana dashboards with Maja.
