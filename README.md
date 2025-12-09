@@ -167,6 +167,10 @@ kubectl get ingress -A
 - minikube start driver=docker
 - minikube addons enable ingress
 - minikube addons enable metallb
+- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+- helm repo update
+- kubectl create namespace monitoring
+- helm upgrade --install sms ./helm/sms -n default --create-namespace --waithelm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
 - helm upgrade --install sms ./helm/sms -n default --create-namespace --wait (check the directory)
 - helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
 - POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')

@@ -50,3 +50,6 @@ monitoring:
 secrets:
   smtp_user: ""
   smtp_pass: ""
+
+ingressgateway:
+  ingressGatewayLabel: ingressgateway

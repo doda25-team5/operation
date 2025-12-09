@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sms-frontend
+  name: sms-frontend-canary
   labels:
     app: sms-frontend
-    version: v1
+    version: v2
 spec:
   replicas: {{ .Values.replicaCountFrontend }}
   selector:
     matchLabels:
       app: sms-frontend
-      version: v1
+      version: v2
   template:
     metadata:
       labels:
         app: sms-frontend
-        version: v1
+        version: v2
     spec:
       containers:
       - name: frontend
