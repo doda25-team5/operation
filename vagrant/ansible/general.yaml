@@ -60,16 +60,17 @@
         state: present
         reload: yes
 
-    # step 8
+  # step 8
     - name: manage /etc/hosts
       blockinfile:
         path: /etc/hosts
         marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
         block: |
-          192.168.56.100 ctrl
-          192.168.56.101 node-1
-          192.168.56.102 node-2
-
+           192.168.56.100 ctrl
+            {% for i in range(1, worker_count + 1) %}
+                  192.168.56.10{{ i }} node-{{ i }}
+            {% endfor %}
+          
       # step 9
     - name: install APT transport and GPG dependencies
       apt:
