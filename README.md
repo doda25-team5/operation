@@ -108,7 +108,14 @@ http://localhost:8080/lib-version
 * **`lib-version`**: Version-aware Maven Library
 
 ## A2: Provisioning a Kubernetes Cluster
-After running the finalization.yml playbook, the Kubernetes cluster exposes its services through MetalLB and the Ingress-NGINX controller.
+
+From the operation repo, go into the vagrant directory in order to follow through with the rest of this section.
+
+```bash
+cd vagrant
+```
+
+In this directory, we have the ansible/ folder which holds the different playbooks for each nodes (ctrl, node-1, etc). We also have a finalization/ folder which holds all the files that pertains to the 'Finalizing the Cluster Setup'. 
 
 ### Host-Based Kubernetes Access
 
