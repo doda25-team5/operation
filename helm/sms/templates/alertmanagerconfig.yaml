@@ -3,30 +3,31 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: sms-alerts
+  namespace: default
   labels:
-    release: prometheus  
+    release: kube-prometheus-stack
 spec:
   route:
     groupBy: ["alertname"]
     groupWait: 30s
     groupInterval: 2m
     repeatInterval: 4h
-    receiver: team-email
+    receiver: gmail-alerts
     routes:
       - matchers:
           - name: severity
-            value: warning
             matchType: =
-        receiver: team-email
+            value: warning
+        receiver: gmail-alerts
   receivers:
-    - name: team-email
+    - name: gmail-alerts
       emailConfigs:
         - to: {{ .Values.monitoring.alerts.email.to | quote }}
           from: {{ .Values.monitoring.alerts.email.from | quote }}
-          smarthost: {{ .Values.monitoring.alerts.email.smarthost | quote }} 
+          smarthost: "smtp.gmail.com:587"
+          requireTLS: true
           authUsername: {{ .Values.monitoring.alerts.email.username | quote }}
           authPassword:
-            name: alertmanager-smtp
-            key: password
-          requireTLS: false
+            name: sms-secrets
+            key: smtp_pass
 {{- end }}

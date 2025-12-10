@@ -5,7 +5,7 @@ metadata:
   name: sms-backend-rules
   namespace: monitoring
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   groups:
   - name: sms.rules

@@ -8,7 +8,7 @@ kind: ServiceMonitor
 metadata:
   name: sms-backend-sm
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:
@@ -30,7 +30,7 @@ kind: ServiceMonitor
 metadata:
   name: sms-frontend-sm
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:
