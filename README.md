@@ -117,6 +117,28 @@ cd vagrant
 
 In this directory, we have the ansible/ folder which holds the different playbooks for each nodes (ctrl, node-1, etc). We also have a finalization/ folder which holds all the files that pertains to the 'Finalizing the Cluster Setup'. 
 
+First run `vagrant up` to start up the cluster and run all the playbooks.
+
+### Network Communication
+
+#### VM to VM
+
+```bash
+vagrant ssh ctrl # go into the ctrl node
+
+ping -c 3 node-1
+ping -c 3 node-2
+
+exit
+```
+
+### Host to VM
+
+```bash
+ping -c 3 ctrl
+ping -c 3 node-1
+ping -c 3 node-2
+```
 ### Host-Based Kubernetes Access
 
 During provisioning, the controller’s kubeconfig (admin.conf) is copied to the shared /vagrant folder so it is accessible from the host machine.
