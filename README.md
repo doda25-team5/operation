@@ -178,6 +178,7 @@ From your host machine do:
 
 ```bash
 ssh-copy-id vagrant@192.168.56.100
+#It will prompt you to enter a password. The password is vagrant.
 ```
 
 This will enable you to not have to enter a password when SSH'ing into ctrl. 
