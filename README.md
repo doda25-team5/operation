@@ -164,15 +164,15 @@ kubectl get ingress -A
 ```
 ## A3
 ### Steps for running the kubernetes cluster
-- minikube start driver=docker
+- minikube start --driver=docker --memory=4096 --cpus=4
 - minikube addons enable ingress
 - minikube addons enable metallb
+- istioctl install --set profile=default -y
 - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 - helm repo update
 - kubectl create namespace monitoring
-- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
 - helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
-- istioctl install --set profile=default -y
+- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
 - helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
 - POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
 kubectl port-forward -n default pod/$POD 8080:8080
