@@ -187,4 +187,72 @@ kubectl port-forward -n default pod/$POD 8081:8081
 Monitoring:
   Enable with --set monitoring.enabled=true
 
+### Test Mounted Shared Folder
+
+#### Start Minikube
+
+```bash
+minikube start --driver=docker
+```
+
+#### (Important) Allow mount port through firewall (Ubuntu only)
+
+Minikube mount uses a TCP port for communication between host ↔ node.
+Some Ubuntu systems block this unless explicitly allowed.
+
+Allow a safe port:
+
+```bash
+sudo ufw allow 20000/tcp
+#(This step is harmless even if UFW is disabled.)
+```
+
+#### Start the host -> Minikube mount
+
+Run this in a seperate terminal window
+Do not close this terminal while testing
+
+```bash
+minikube mount $(pwd)/shared:/mnt/shared --port=20000
+```
+
+You should see something like ✅ Successfully mounted.
+
+#### Deploy the application
+
+```bash
+helm upgrade --install sms ./helm/sms \
+   -n default \
+--create-namespace
+```
+
+If it fails due to prometheus not being installed then you must install it first.
+
+Wait for the pod to be running:
+
+```bash
+kubectl get pods -n default
+```
+
+#### Verify the mount inside the Pod
+
+Get the frontend pod name:
+
+```bash
+POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
+```
+
+Check the shared directory:
+
+```bash
+kubectl exec -it -n default $POD -- ls /mnt/shared
+```
+
+Expected output:
+
+```bash
+example.txt
+```
+
+
 

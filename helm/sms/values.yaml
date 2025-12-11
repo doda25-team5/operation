@@ -52,7 +52,7 @@ secrets:
   smtp_pass: ""
 
 hostPath:
-  enabled: false
+  enabled: true
   path: /mnt/shared
   mountPath: /mnt/shared
 
