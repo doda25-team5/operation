@@ -192,4 +192,10 @@ kubectl port-forward -n default pod/$POD 8081:8081
 Monitoring:
   Enable with --set monitoring.enabled=true
 
-
+## A4
+- To test 90 / 10 split
+- minikube tunnel
+- for i in {1..20}; do curl -si -H "x-user: bob" http://localhost/sms | grep version; done (mac/linux)
+- for ($i=1; $i -le 20; $i++) {
+    curl -Headers @{"x-user"="bob"} http://localhost/sms -UseBasicParsing | Select-String version
+} (windows)
