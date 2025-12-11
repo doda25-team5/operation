@@ -1,8 +1,14 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
-metadata: { name: sms-gateway }
+metadata:
+  name: sms-gateway
 spec:
-  selector: { istio: .Values.ingressgateway.ingressGatewayLabel }
+  selector:
+    istio: {{ .Values.ingressgateway.ingressGatewayLabel }}
   servers:
-  - port: { number: 80, name: http, protocol: HTTP }
-    hosts: [ "*" ]
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
