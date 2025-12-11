@@ -3,11 +3,19 @@ kind: DestinationRule
 metadata:
   name: sms-frontend
 spec:
-  host: sms-frontend-svc
+  host: "*"
   subsets:
-  - name: stable
-    labels:
-      version: v1
-  - name: canary
-    labels:
-      version: v2
+    - name: stable
+      labels:
+        version: v1
+      trafficPolicy:
+        loadBalancer:
+          consistentHash:
+            httpHeaderName: "x-user"  
+    - name: canary
+      labels:
+        version: v2
+      trafficPolicy:
+        loadBalancer:
+          consistentHash:
+            httpHeaderName: "x-user"
