@@ -50,3 +50,9 @@ monitoring:
 secrets:
   smtp_user: ""
   smtp_pass: ""
+
+hostPath:
+  enabled: false
+  path: /mnt/shared
+  mountPath: /mnt/shared
+
