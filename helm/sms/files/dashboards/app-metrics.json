@@ -1,33 +1,90 @@
 {
-"title": "App Metrics (minimal)",
-"panels": [
-{
-"type": "graph",
-"title": "Requests — rate (1m)",
-"targets": [
-{ "expr": "rate(sms_predictions_total[1m])", "refId": "A" }
-]
-},
-{
-"type": "graph",
-"title": "Requests — increase (5m)",
-"targets": [
-{ "expr": "increase(sms_predictions_total[5m])", "refId": "A" }
-]
-},
-{
-"type": "graph",
-"title": "Latency P95 (5m)",
-"targets": [
-{ "expr": "histogram_quantile(0.95, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "A" }
-]
-},
-{
-"type": "stat",
-"title": "Model file size (bytes)",
-"targets": [
-{ "expr": "sms_model_file_size_bytes", "refId": "A" }
-]
-}
-]
+  "uid": "sms-frontend-dashboard",
+  "title": "SMS Frontend Metrics",
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "5s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "interval",
+        "type": "interval",
+        "query": "30s,1m,5m,10m,30m,1h",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
+        "label": "Time Interval"
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "type": "gauge",
+      "title": "Active Sessions",
+      "id": 1,
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        { "expr": "frontend_active_sessions", "refId": "A" }
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Average SMS Length",
+      "id": 3,
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sms_input_length_sum / sms_input_length_count",
+          "legendFormat": "Average Length",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Spam vs Ham Predictions (rate)",
+      "id": 3,
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
+      "options": {
+        "displayMode": "bars",
+        "barWidth": 0.9
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category)",
+          "legendFormat": "{{category}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "heatmap",
+      "title": "SMS Length",
+      "id": 5,
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (le)(increase(sms_input_length_bucket[$interval]))",
+          "format": "heatmap",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "color": {
+          "mode": "scheme",
+          "scheme": "Greens"
+        }
+      }
+    }
+
+  ],
+
+  "time": { "from": "now-15m", "to": "now" }
 }
