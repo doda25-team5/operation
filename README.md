@@ -284,34 +284,84 @@ kubectl --kubeconfig=./admin.conf get deployments -A
 ```
 ## A3: Operate and Monitor Kubernetes
 
-### Steps for running the kubernetes cluster
-- minikube start --driver=docker --memory=4096 --cpus=4
-- minikube addons enable ingress
-- minikube addons enable metallb
-- istioctl install --set profile=default -y
-- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-- helm repo update
-- kubectl create namespace monitoring
-- helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
-- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
-- helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
-- POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward -n default pod/$POD 8080:8080
-- POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward -n default pod/$POD 8081:8081
-- kubectl -n monitoring port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090
-- kubectl -n monitoring port-forward svc/prometheus-grafana 3000:80
-- kubectl --namespace monitoring get secrets prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo (for getting the password to the grafana)
+### Minikube setup
 
-### Helm chart for SMS app. Usage:
-  - helm upgrade --install sms ./ -n default --create-namespace --set ingress.host=sms.test.local
-  
-#### Secrets:
-  - Do NOT put secrets in values.yaml. 
-  - Create Kubernetes secret instead:  
-  kubectl create secret generic sms-secrets --from-literal=smtp_user='<USER>' --from-literal=smtp_pass='<PASS>' -n default
+Ensure kubectl and helm are installed. In operations run the following:
+
+```bash
+minikube start --driver=docker 
+```
+
+Enable addons:
+```bash
+minikube addons enable ingress
+minikube addons enable metallb
+```
+
+### Helm and Prometheus installation
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+kubectl create namespace monitoring
+helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
+```
+### Intsall sms Helm chart
+
+```bash
+helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
+```
+## Push ConfigMap into monitoring
+
+```bash
+helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
+```
+
+## Port Forwards
+
+Run each forward in a separate terminal:
+
+Frontend (open http://localhost:8080):
+```bash
+POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward -n default pod/$POD 8080:8080
+```
+
+Backend (open http://localhost:8081/apidocs and http://localhost:8081/metrics):
+```bash
+POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward -n default pod/$POD 8081:8081
+```
+
+Prometheus (open http://localhost:9090/targets and http://localhost:9090/rules):
+```bash
+kubectl -n monitoring port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090
+```
+
+Grafana (open http://localhost:3000):
+```bash
+kubectl -n monitoring port-forward svc/prometheus-grafana 3000:80
+```
+Grafana admin password:
+```bash
+kubectl get secret -n monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+```
+
+### Helm chart for SMS app
+```bash
+helm upgrade --install sms ./ -n default --create-namespace --set ingress.host=sms.test.local
+```
+
+#### Secrets 
+Do NOT put secrets in values.yaml. Create Kubernetes secret in the following way:
+```bash
+kubectl create secret generic sms-secrets --from-literal=smtp_user='<USER>' --from-literal=smtp_pass='<PASS>' -n default
+```
 Monitoring:
+```bash
   Enable with --set monitoring.enabled=true
+```
+Prometheus Alertmanager must authenticate via SMTP to send emails. You have to manually create the SMTP secret locally before deploying.
 
 ### Test Mounted Shared Folder
 
@@ -379,34 +429,6 @@ Expected output:
 ```bash
 example.txt
 ```
-## A3
-### Steps for running the kubernetes cluster
-- minikube start --driver=docker
-- minikube addons enable ingress
-- minikube addons enable metallb
-- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-- helm repo update
-- helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait
-- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait (check the directory)
-- helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
-- POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
-- kubectl port-forward -n default pod/$POD 8080:8080
-- POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
-- kubectl port-forward -n default pod/$POD 8081:8081
-- kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
-- kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
-- kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo (for getting the password to the grafana)
-
-### Helm chart for SMS app. Usage:
-  - helm upgrade --install sms ./helm/sms -n default --create-namespace --set ingress.host=sms.test.local
-  
-### Secrets:
-  - Do NOT put secrets in values.yaml. 
-  - Create Kubernetes secret instead:  
-  kubectl create secret generic sms-secrets --from-literal=smtp_user='<USER>' --from-literal=smtp_pass='<PASS>' -n default
-Monitoring:
-  Enable with --set monitoring.enabled=true
-  - Prometheus Alertmanager must authenticate via SMTP to send emails. You have to manually create the SMTP secret locally before deploying.
 
 ### Alerting Setup:
    - Generate your own Gmail App Password

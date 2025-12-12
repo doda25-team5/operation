@@ -78,3 +78,7 @@ Spent my time adding metrics for the frontend without any external dependencies.
 
 #### Vedant: https://github.com/doda25-team5/app/pull/10#
 Spend a litle bit of my time in fixing the frontend metrics from last week and have also started implementing a the new feature for A4 where we are beautifying the frontend. The group has decided to create metrics to "test" the new version of the frontend which will be implemented by next week.
+
+#### Maja https://github.com/doda25-team5/app/pull/10# https://github.com/doda25-team5/operation/pull/11
+Worked on improving the app frontend metrics created by Priyansh. Then based on the new image implemented frontend metrings for two Grafana dashboards, making sure there was a sufficient variety between the types of plots and functions applied (avg and rate). 
+
