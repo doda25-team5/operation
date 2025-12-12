@@ -72,3 +72,6 @@ This week i went back to A2 to finish some off some things that we didn't do yet
 
 #### Nicolas: https://github.com/doda25-team5/operation/pull/15
 Worked on fixing alerts from the last assignment and changed the approach by implementing gmail alerts.
+
+#### Priyansh: https://github.com/doda25-team5/app/pull/10#
+Spent my time adding metrics for the frontend without any external dependencies. Also currently working on making sure that gmail alerts work with Google app passcode (smtp) and are triggered by Prometheus monitoring the metric.
