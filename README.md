@@ -285,10 +285,15 @@ kubectl --kubeconfig=./admin.conf get deployments -A
 ## A3: Operate and Monitor Kubernetes
 
 ### Steps for running the kubernetes cluster
-- minikube start driver=docker
+- minikube start --driver=docker --memory=4096 --cpus=4
 - minikube addons enable ingress
 - minikube addons enable metallb
-- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait (check the directory)
+- istioctl install --set profile=default -y
+- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+- helm repo update
+- kubectl create namespace monitoring
+- helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
+- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
 - helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
 - POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
 kubectl port-forward -n default pod/$POD 8080:8080
@@ -376,6 +381,13 @@ example.txt
 ```
   
 ## A4: Istio Service Mesh
+  
+- To test 90 / 10 split
+- minikube tunnel
+- for i in {1..20}; do curl -si -H "x-user: bob" http://localhost/sms | grep version; done (mac/linux)
+- for ($i=1; $i -le 20; $i++) {
+    curl -Headers @{"x-user"="bob"} http://localhost/sms -UseBasicParsing | Select-String version
+} (windows)
 
 
 

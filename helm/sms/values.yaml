@@ -51,6 +51,9 @@ secrets:
   smtp_user: ""
   smtp_pass: ""
 
+ingressgateway:
+  ingressGatewayLabel: ingressgateway
+
 hostPath:
   enabled: true
   path: /mnt/shared

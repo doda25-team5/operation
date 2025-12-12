@@ -4,15 +4,18 @@ metadata:
   name: sms-frontend
   labels:
     app: sms-frontend
+    version: v1
 spec:
   replicas: {{ .Values.replicaCountFrontend }}
   selector:
     matchLabels:
       app: sms-frontend
+      version: v1
   template:
     metadata:
       labels:
         app: sms-frontend
+        version: v1
     spec:
 
       # OPTIONAL HOSTPATH VOLUME (EXCELLENT LEVEL)

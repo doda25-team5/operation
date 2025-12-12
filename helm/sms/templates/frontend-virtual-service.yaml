@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: sms-frontend
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - sms-gateway
+  http:
+  - route:
+    - destination:
+        host: sms-frontend-svc
+        subset: stable
+      weight: 90
+      headers:
+        request:
+          set:
+            x-app-version: "stable"
+        response:
+          set:
+            version: "v1"
+
+    - destination:
+        host: sms-frontend-svc
+        subset: canary
+      weight: 10
+      headers:
+        request:
+          set:
+            x-app-version: "canary"
+        response:
+          set:
+            version: "v2"
