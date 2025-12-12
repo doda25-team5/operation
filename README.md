@@ -4,29 +4,27 @@ This repository contains the **Docker Compose** setup used to run the complete S
 * **model-service** (Python backend)
 * **frontend** (Spring Boot UI)
 
----
+## A1: Versions, Releases & Containerization 
 
-## Requirements
+### Requirements
 
 The following software is required to run the application:
 * **Docker**
 * **Docker Compose v2+**
 
----
 
-
-## ⚙️ Environment Variables in .env
+### Environment Variables in .env
 
 
 Defining the purpose of a few variables:
 
-### Frontend
+#### Frontend
 | Variable      | Purpose                                    | Default                     |
 | ------------- | ------------------------------------------ | --------------------------- |
 | `SERVER_PORT` | Internal port the frontend binds to        | `8080`                      |
 
 
-### Model-Service
+#### Model-Service
 | Variable           | Purpose                                      | Default                   |
 | ------------------ | -------------------------------------------- | ------------------------- |
 | `MODEL_PORT`       | Internal port Flask listens on               | `8081`                    |
@@ -53,8 +51,8 @@ FRONTEND_HOST_PORT=8080
 SERVER_PORT=8080
 
 ```
----
-## ▶ How to Start the Application
+
+### How to Start the Application
 
 From this directory, use the following command to start the services:
 
@@ -81,9 +79,7 @@ To **stop** and remove the containers, networks, and volumes:
 docker compose down
 ```
 
----
-
-## Using a Specific Image Tag
+### Using a Specific Image Tag
 
 By default, the Compose file uses the **`latest`** image tag.
 
@@ -91,9 +87,7 @@ By default, the Compose file uses the **`latest`** image tag.
 To run a **specific version** (for example, `v1.0.2`), set the `IMAGE_FRONTEND_TAG` or `IMAGE_BACKEND_TAG` environment variable in the .env when running Compose:
 
 
----
-
-## Test the frontend    
+### Test the frontend    
 
 Open:
 
@@ -102,67 +96,194 @@ http://localhost:8080/sms
 ```
 Submit an SMS message and verify the prediction result.
 
-## Check the version library
+### Check the version library
 
 ```bash
 http://localhost:8080/lib-version
 ```
----
-
-## Related Repositories
+### Related Repositories
 
 * **`app`**: Contains the Spring Boot frontend application and its Dockerfile.
 * **`model-service`**: Contains the Python backend application and its Dockerfile.
 * **`lib-version`**: Version-aware Maven Library
 
-## Accessing the Kubernetes Cluster and Services
-After running the finalization.yml playbook, the Kubernetes cluster exposes its services through MetalLB and the Ingress-NGINX controller.
+## A2: Provisioning a Kubernetes Cluster
 
-### Kubernetes Dashboard
-
-The dashboard is exposed through an Ingress with the hostname:
+From the operation repo, go into the vagrant directory in order to follow through with the rest of this section.
 
 ```bash
-dashboard.local
+cd vagrant
 ```
 
-1. Add to /etc/hosts:
-   
+In this directory, we have the ansible/ folder which holds the different playbooks for each nodes (ctrl, node-1, etc). We also have a finalization/ folder which holds all the files that pertains to the 'Finalizing the Cluster Setup'. 
+
+First run `vagrant up` to start up the cluster and run all the playbooks.
+
+### Network Communication
+
+#### VM to VM
+
+```bash
+vagrant ssh ctrl # go into the ctrl node
+
+ping -c 3 node-1
+ping -c 3 node-2
+
+exit
+```
+
+### Host to VM
+
+```bash
+ping -c 3 ctrl
+ping -c 3 node-1
+ping -c 3 node-2
+```
+### Host-Based Kubernetes Access
+
+During provisioning, the controller’s kubeconfig (admin.conf) is copied to the shared /vagrant folder so it is accessible from the host machine.
+
+#### Verify kubeconfig exists
+
+```bash
+ls -l admin.conf
+```
+#### Use kubectl from your host system
+
+```bash
+kubectl --kubeconfig=./admin.conf get nodes
+```
+
+This confirms:
+- The control plane is running
+- Workers joined successfully
+- The host can manage the cluster
+
+
+### Accessing the Kubernetes Dashboard
+
+The dashboard is deployed via Helm and exposed through an Ingress. We assign it a stable MetalLB external IP and access it through a hostname. FIrst we must apply the finalization playbook. 
+
+#### Apply the finalization playbook (Inginx, MetalLB, Dashboard, etc.)
+
+From your host terminal (make sure you're in the vagrant directory), execute:
+
+```bash
+ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
+```
+
+If you encounter an SSH error at task 'Ensure vagrant user has passwordless sudo' then do the following:
+
+From your host machine do:
+
+```bash
+ssh-copy-id vagrant@192.168.56.100
+#It will prompt you to enter a password. The password is vagrant.
+```
+
+This will enable you to not have to enter a password when SSH'ing into ctrl. 
+
+To ensure it's good, attempt the following command and make sure it doesn't prompt you to enter a password.
+
+```bash
+ssh vagrant@192.168.56.100
+```
+
+Once this is good, you can go back and execute
+```bash
+ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
+```
+
+#### Add hostname entry (on the host machine)
+
+In your host terminal, execute the command:
+
+```bash
+nano /etc/hosts
+```
+
+and paste the following:
+
 ```bash
 192.168.56.90  dashboard.local
 ```
+#### Access the dashboard via your browser
 
-2. Open in your browser:
-   
+Pase this url in your broswer to access the dashboard
+
 ```bash
 https://dashboard.local
 ```
 
-### Ingress-NGINX Controller
+#### Generate an admin token for login:
+
+First SSH into the ctrl node using:
+
+```bash
+vagrant ssh ctrl
+```
+Once you've done that, execute the following command to generate a token:
+
+```bash
+kubectl -n kubernetes-dashboard create token admin-user
+```
+
+A token should be generated. Copy this and paste it into the dashboard token promp you should be able to login!
+
+### Ingress-NGINX Controller For Dashboard
 
 The Ingress controller receives the MetalLB external IP:
 
 ```bash
 192.168.56.90
 ```
+#### To verify the service (from host)
 
+```bash
+kubectl --kubeconfig=./admin.conf -n ingress-nginx get svc ingress-nginx-controller
+```
 
-### MetalLB IPAddressPool Manifest
+You should see the service running with type 'LoadBalancer' and External-IP '192.168.56.90'
+
+### MetalLB Load Balancer Configuration
+
+MetalLB is installed using the native manifests, and the IPAddressPool defines the IP range assigned to LoadBalancer services.
 
 Pool:
 
 ```bash
- - 192.168.56.90-192.168.56.99
+addresses:
+  - 192.168.56.90-192.168.56.99
 ```
+
+#### Verify MetalLB components
+
+```bash
+kubectl --kubeconfig=./admin.conf get pods -n metallb-system
+```
+
+You should see a controller and speaker running
+
+#### Verify IP Allocation
+
+```bash
+kubectl --kubeconfig=./admin.conf get svc
+```
+
+A service of type LoadBalancer should get an IP within your pool
 
 ### Verification Commands
 
 ```bash
-kubectl get pods -A
-kubectl get svc -A
-kubectl get ingress -A
+kubectl --kubeconfig=./admin.conf get nodes
+kubectl --kubeconfig=./admin.conf get pods -A
+kubectl --kubeconfig=./admin.conf get svc -A
+kubectl --kubeconfig=./admin.conf get ingress -A
+kubectl --kubeconfig=./admin.conf get daemonset -A
+kubectl --kubeconfig=./admin.conf get deployments -A
 ```
-## A3
+## A3: Operate and Monitor Kubernetes
+
 ### Steps for running the kubernetes cluster
 - minikube start driver=docker
 - minikube addons enable ingress
@@ -253,6 +374,8 @@ Expected output:
 ```bash
 example.txt
 ```
+  
+## A4: Istio Service Mesh
 
 
 
