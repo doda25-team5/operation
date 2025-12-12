@@ -379,6 +379,68 @@ Expected output:
 ```bash
 example.txt
 ```
+## A3
+### Steps for running the kubernetes cluster
+- minikube start --driver=docker
+- minikube addons enable ingress
+- minikube addons enable metallb
+- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+- helm repo update
+- helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait
+- helm upgrade --install sms ./helm/sms -n default --create-namespace --wait (check the directory)
+- helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
+- POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
+- kubectl port-forward -n default pod/$POD 8080:8080
+- POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
+- kubectl port-forward -n default pod/$POD 8081:8081
+- kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+- kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+- kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo (for getting the password to the grafana)
+
+### Helm chart for SMS app. Usage:
+  - helm upgrade --install sms ./helm/sms -n default --create-namespace --set ingress.host=sms.test.local
+  
+### Secrets:
+  - Do NOT put secrets in values.yaml. 
+  - Create Kubernetes secret instead:  
+  kubectl create secret generic sms-secrets --from-literal=smtp_user='<USER>' --from-literal=smtp_pass='<PASS>' -n default
+Monitoring:
+  Enable with --set monitoring.enabled=true
+  - Prometheus Alertmanager must authenticate via SMTP to send emails. You have to manually create the SMTP secret locally before deploying.
+
+### Alerting Setup:
+   - Generate your own Gmail App Password
+      - Go to: https://myaccount.google.com/apppasswords
+      - Create an app password and name it: “Kubernetes”
+      - Google will give you a 16-character App Password
+      - Copy it, you will need it in the next step
+   - Create the Kubernetes secret
+      - kubectl -n default create secret generic sms-secrets --from-literal=smtp_user='your.email@gmail.com' --from-literal=smtp_pass='YOUR_APP_PASSWORD'
+      - NOTE: change your.email@gmail.com with your own gmail and YOUR_APP_PASSWORD with the 16-character App Password you just created (remove the spaces in the code).
+   - Where Alertmanager sends the email (Important)
+      - By default, the alert email is sent to nicoloaiza16@gmail.com unless you change this.
+      - If you want to test it and send the alert to your own gmail: go to helm/sms/values.yaml and replace these three lines with your own gmail:
+        - to: "nicoloaiza16@gmail.com" -> to: "your.email@gmail.com"
+        - from: "nicoloaiza16@gmail.com" -> from: "your.email@gmail.com"
+        - username: "nicoloaiza16@gmail.com" -> username: "your.email@gmail.com"
+   - Redeploy Helm chart
+     - helm upgrade --install sms ./helm/sms -n default --wait
+   - Port-forward backend and Prometheus (if not done already)
+     - POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward -n default pod/$POD 8081:8081
+     - kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+   - Trigger alert
+     - Windows:
+       - $body=@{sms="load test message"}|ConvertTo-Json; $end=(Get-Date).AddMinutes(3); while((Get-Date) -lt $end){1..30|%{try{Invoke-RestMethod -Uri http://localhost:8081/predict -Method POST -Body $body -ContentType 'application/json'|Out-Null}catch{}}; Start-Sleep -Milliseconds 300}; Write-Host 'Done! Check Prometheus: http://localhost:9090/alerts'
+
+     - MacOS/Linux:
+       - for i in {1..1200}; do curl -s -X POST http://localhost:8081/predict -H 'Content-Type: application/json' -d '{"sms":"load test message"}' >/dev/null; sleep 0.1; done; echo 'Done! Check Prometheus: http://localhost:9090/alerts'
+
+   - Verify the alert and gmail delivery
+     - Open http://localhost:9090/alerts
+     - Find the alert named HighRequestRate
+     - It will transition from Inactive -> Pending -> Firing (This takes around 3 minutes)
+     - Once its Firing check your gmail inbox
   
 ## A4: Istio Service Mesh
   

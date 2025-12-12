@@ -41,21 +41,11 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "test@local"
-      from: "alertmanager@local"
-      smarthost: "mailhog-smtp.tools.svc.cluster.local:1025"
-      username: ""
-      password: ""
+      to: "nicoloaiza16@gmail.com"
+      from: "nicoloaiza16@gmail.com"
+      username: "nicoloaiza16@gmail.com"
 
 secrets:
+  create: false
   smtp_user: ""
   smtp_pass: ""
-
-ingressgateway:
-  ingressGatewayLabel: ingressgateway
-
-hostPath:
-  enabled: true
-  path: /mnt/shared
-  mountPath: /mnt/shared
-
