@@ -1,19 +1,57 @@
 {
-"title": "Decision Support (minimal)",
-"panels": [
-{
-"type": "graph",
-"title": "Latency P95 (5m)",
-"targets": [
-{ "expr": "histogram_quantile(0.95, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "A" }
-]
-},
-{
-"type": "graph",
-"title": "Latency P50 (5m)",
-"targets": [
-{ "expr": "histogram_quantile(0.50, sum(rate(sms_prediction_latency_seconds_bucket[5m])) by (le))", "refId": "B" }
-]
-}
-]
+  "uid": "sms-decision-dashboard",
+  "title": "SMS Decision Dashboard",
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "5s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "interval",
+        "type": "interval",
+        "query": "1m,5m,10m,30m,1h,6h,12h,24h",
+        "current": { "selected": true, "text": "10m", "value": "10m" },
+        "label": "Interval"
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "type": "timeseries",
+      "title": "P95 Request Latency",
+      "id": 1,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(frontend_request_latency_seconds_bucket[$interval])) by (le))",
+          "legendFormat": "P95 Latency",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Spam vs Ham Ratio",
+      "id": 2,
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category)",
+          "legendFormat": "{{category}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "displayMode": "bars",
+        "barWidth": 0.9
+      }
+    }
+
+  ],
+
+  "time": { "from": "now-2h", "to": "now" }
 }

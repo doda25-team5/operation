@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: sms-alerts
-  namespace: default
+  namespace: monitoring
   labels:
     release: kube-prometheus-stack
 spec:
