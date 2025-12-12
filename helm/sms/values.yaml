@@ -53,3 +53,9 @@ secrets:
 
 ingressgateway:
   ingressGatewayLabel: ingressgateway
+
+hostPath:
+  enabled: true
+  path: /mnt/shared
+  mountPath: /mnt/shared
+

@@ -62,3 +62,7 @@ Worked on creating endpoints for app and model-service to enable monitoring and 
 
 #### Priyansh: https://github.com/doda25-team5/operation/pull/10, https://github.com/doda25-team5/app/pull/8, https://github.com/doda25-team5/model-service/pull/9
 Worked independently on migration from docker to kubernetes and helm charts. Collaborated with Erkin and Jayran for this one. Then, I also worked on setting up grafana dashboards with Maja.
+
+## WEEK 5 - Assignment 4
+#### Erkin: https://github.com/doda25-team5/operation/pull/14
+Worked on the assignment a4 adding virtual services, destination rules, gateways and having versioned deployments as v1 and v2. This was the first part of the assignment a4.
