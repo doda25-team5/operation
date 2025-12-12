@@ -38,8 +38,9 @@ spec:
   namespaceSelector:
     any: true
   endpoints:
-    - port: http             # matches frontend service port name
-      path: /actuator/prometheus
+    - port: http            
+      path: /metrics
       interval: 30s
 
 {{- end }}
+
