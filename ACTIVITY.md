@@ -69,3 +69,6 @@ Worked on the assignment a4 adding virtual services, destination rules, gateways
 
 #### Jayran:https://github.com/doda25-team5/operation/pull/13 | https://github.com/doda25-team5/operation/pull/12
 This week i went back to A2 to finish some off some things that we didn't do yet. I did the advanced step 8 where you dynacmailly add the hosts (by extra vars variable) and cleaned/updated the read me section for A2. For A3, I added the mount shared folder part. BUt Im not sure that it's correct since we used docker instead of virtualbox. This might need to be updated later but it works for docker currently. I also updateded the A3 part of the rubric detailing the work. No contributions to A4 a yet.
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/15
+Worked on fixing alerts from the last assignment and changed the approach by implementing gmail alerts.
