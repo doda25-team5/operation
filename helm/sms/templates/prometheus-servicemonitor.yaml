@@ -1,11 +1,11 @@
 {{- if .Values.monitoring.enabled }}
-
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: sms-frontend-sm
+  namespace: monitoring
   labels:
-    release: kube-prometheus-stack
+    release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   selector:
     matchLabels:
@@ -13,8 +13,7 @@ spec:
   namespaceSelector:
     any: true
   endpoints:
-    - port: http            
+    - port: http
       path: /metrics
       interval: 30s
-
 {{- end }}

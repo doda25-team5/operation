@@ -5,7 +5,7 @@ metadata:
   name: sms-backend-rules
   namespace: monitoring
   labels:
-    release: kube-prometheus-stack
+    release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   groups:
   - name: sms.rules
@@ -15,6 +15,7 @@ spec:
       for: 2m
       labels:
         severity: warning
+        namespace: monitoring   # <--- REQUIRED TO MATCH CONFIG
       annotations:
         summary: "High request rate on SMS frontend"
         description: "More than ~15 requests/min for 2 minutes"

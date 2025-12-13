@@ -35,15 +35,13 @@ ingress:
 
 monitoring:
   enabled: true
-  exporter:
-    image: ghcr.io/doda25-team5/sms-exporter
-    tag: "0.1"
+  prometheusRelease: "monitoring"
   alerts:
     email:
       enabled: true
-      to: "nicoloaiza16@gmail.com"
-      from: "nicoloaiza16@gmail.com"
-      username: "nicoloaiza16@gmail.com"
+      to: "priyansh.rajusth@gmail.com"
+      from: "priyansh.rajusth@gmail.com"
+      username: "priyansh.rajusth@gmail.com"
 
 secrets:
   create: false
