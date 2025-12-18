@@ -82,3 +82,17 @@ Spend a litle bit of my time in fixing the frontend metrics from last week and h
 #### Maja https://github.com/doda25-team5/app/pull/10# https://github.com/doda25-team5/operation/pull/11
 Worked on improving the app frontend metrics created by Priyansh. Then based on the new image implemented frontend metrings for two Grafana dashboards, making sure there was a sufficient variety between the types of plots and functions applied (avg and rate). 
 
+## WEEK 6 - All Assignments
+
+#### Erkin:
+
+#### Jayran: https://github.com/doda25-team5/operation/pull/17
+I worked on A4 a little bit. The canary deployment and stable deployment were using the same backend and frontend images so i updated the values.yaml to ensure that each deployment have their own tags that they use for the images. For now they are still pointing to the same "latest" image but once we have our addition and create the tag for it, it will be updated.
+
+#### Nicolas: 
+
+#### Priyansh: 
+
+#### Vedant: 
+
+#### Maja: 
