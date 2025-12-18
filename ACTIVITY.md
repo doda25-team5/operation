@@ -96,3 +96,4 @@ I worked on A4 a little bit. The canary deployment and stable deployment were us
 #### Vedant: 
 
 #### Maja: 
+Worked on the A2 assignment this week, specifically steps 8 and 23 for the final presentation. The branch can be merged with the main with no issues but it needs more testing for veryfing if the installation works correctly.   
