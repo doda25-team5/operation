@@ -210,3 +210,59 @@
         kubeconfig: "{{ kubeconfig_path }}"
         src: /home/vagrant/dashboard-ingress.yaml
 
+    # STEP 23 — Install Istio 
+
+    - name: Download Istio 1.25.2 (amd64)
+      ansible.builtin.get_url:
+        url: https://github.com/istio/istio/releases/download/1.25.2/istio-1.25.2-linux-amd64.tar.gz
+        dest: /tmp/istio-1.25.2-linux-amd64.tar.gz
+        mode: '0644'
+      when: inventory_hostname == 'ctrl'
+
+    - name: Extract Istio archive
+      ansible.builtin.unarchive:
+        src: /tmp/istio-1.25.2-linux-amd64.tar.gz
+        dest: /opt/
+        remote_src: yes
+      when: inventory_hostname == 'ctrl'
+
+    - name: Create /opt/istio symlink
+      ansible.builtin.file:
+        src: /opt/istio-1.25.2
+        dest: /opt/istio
+        state: link
+        force: yes
+      when: inventory_hostname == 'ctrl'
+
+    - name: Make istioctl available system-wide
+      ansible.builtin.file:
+        src: /opt/istio/bin/istioctl
+        dest: /usr/local/bin/istioctl
+        state: link
+        force: yes
+      when: inventory_hostname == 'ctrl'
+
+    - name: Create IstioOperator config with fixed gateway IP
+      ansible.builtin.copy:
+        dest: /tmp/istio-config.yaml
+        mode: '0644'
+        content: |
+          apiVersion: install.istio.io/v1alpha1
+          kind: IstioOperator
+          spec:
+            components:
+              ingressGateways:
+              - name: istio-ingressgateway
+                enabled: true
+                k8s:
+                  service:
+                    type: LoadBalancer
+                    loadBalancerIP: "192.168.56.91"
+      when: inventory_hostname == 'ctrl'
+
+    - name: Install Istio
+      ansible.builtin.command:
+        cmd: istioctl install -y -f /tmp/istio-config.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      when: inventory_hostname == 'ctrl'
