@@ -4,7 +4,8 @@ replicaCountBackend: 1
 frontend:
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    tag: "latest"
+    stableTag: "latest" #TODO: be updated to actual stable
+    canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
     port: 8080
@@ -12,7 +13,8 @@ frontend:
 backend:
   image:
     repository: ghcr.io/doda25-team5/sms-backend
-    tag: "latest"
+    stableTag: "latest" #TODO: be updated to actual stable
+    canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
     port: 8081

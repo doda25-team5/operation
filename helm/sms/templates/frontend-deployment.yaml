@@ -29,7 +29,7 @@ spec:
 
       containers:
         - name: frontend
-          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.stableTag }}"
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
 
           ports:
