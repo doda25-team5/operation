@@ -84,7 +84,8 @@ Worked on improving the app frontend metrics created by Priyansh. Then based on 
 
 ## WEEK 6 - All Assignments
 
-#### Erkin:
+#### Erkin: https://github.com/doda25-team5/operation/pull/18
+This week I worked on a4. Somehow, last week's merge overrode some files in the main branch so first i fixed it such that the helm chart can be executable. Also, our read me had missing steps for running the assignment a4 and alerts; therefore I fixed our readme. Finally, I make sure that the tags are right for the stable and canary releases for the front end and it complies the 90/10 rule.
 
 #### Jayran: https://github.com/doda25-team5/operation/pull/17
 I worked on A4 a little bit. The canary deployment and stable deployment were using the same backend and frontend images so i updated the values.yaml to ensure that each deployment have their own tags that they use for the images. For now they are still pointing to the same "latest" image but once we have our addition and create the tag for it, it will be updated.

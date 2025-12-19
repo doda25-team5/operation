@@ -4,7 +4,7 @@ replicaCountBackend: 1
 frontend:
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "latest" #TODO: be updated to actual stable
+    stableTag: "1.0.0" #TODO: be updated to actual stable
     canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
@@ -37,17 +37,24 @@ ingress:
 
 monitoring:
   enabled: true
-  exporter:
-    image: ghcr.io/doda25-team5/sms-exporter
-    tag: "0.1"
+  prometheusRelease: "monitoring"
   alerts:
     email:
       enabled: true
-      to: "nicoloaiza16@gmail.com"
-      from: "nicoloaiza16@gmail.com"
-      username: "nicoloaiza16@gmail.com"
+      to: "priyansh.rajusth@gmail.com"
+      from: "priyansh.rajusth@gmail.com"
+      username: "priyansh.rajusth@gmail.com"
 
 secrets:
   create: false
   smtp_user: ""
   smtp_pass: ""
+
+ingressgateway:
+  ingressGatewayLabel: ingressgateway
+
+
+hostPath:
+  enabled: true
+  path: /mnt/shared
+  mountPath: /mnt/shared
