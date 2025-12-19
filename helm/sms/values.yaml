@@ -55,6 +55,6 @@ ingressgateway:
 
 
 hostPath:
-  enabled: false
+  enabled: true
   path: /mnt/shared
   mountPath: /mnt/shared
