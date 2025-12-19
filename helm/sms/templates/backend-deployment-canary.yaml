@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sms-backend
+  name: sms-backend-canary
   labels:
     app: sms-backend
-    version: v1
+    version: v2
 spec:
   replicas: {{ .Values.replicaCountBackend }}
   selector:
     matchLabels:
       app: sms-backend
-      version: v1
+      version: v2
   template:
     metadata:
       labels:
         app: sms-backend
-        version: v1
+        version: v2
     spec:
     
       {{- if .Values.initContainer.enabled }}
@@ -57,7 +57,7 @@ spec:
       containers:
         # BACKEND CONTAINER
         - name: backend
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.stableTag }}"
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.canaryTag }}"
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.backend.service.port }}   

@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: sms-frontend
+spec:
+  host: "*"
+  subsets:
+    - name: stable
+      labels:
+        version: v1
+      trafficPolicy:
+        loadBalancer:
+          consistentHash:
+            httpHeaderName: "x-user"  
+    - name: canary
+      labels:
+        version: v2
+      trafficPolicy:
+        loadBalancer:
+          consistentHash:
+            httpHeaderName: "x-user"

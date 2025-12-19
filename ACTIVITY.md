@@ -41,3 +41,59 @@ In steps 20–22, I finalized the Kubernetes cluster by installing MetalLB, the 
 MetalLB was configured with a fixed IP range so LoadBalancer services receive stable external IPs (safe pool).
 Next, I deployed the Nginx Ingress Controller via Helm and assigned it a fixed IP (192.168.56.90) for routing incoming traffic.
 Finally, I installed the Kubernetes Dashboard using Helm, created an admin ServiceAccount with permissions, and exposed it through an Ingress at https://dashboard.local.
+
+
+## WEEK 4 - Assignment 3
+
+#### Erkin: 
+Worked on the first part of the assignment migrating from docker-compose to kubernetes. Also worked on creating the helm charts and the directory. This is the branch https://github.com/doda25-team5/operation/tree/current that  i worked on and this is the pull request that we created as a group https://github.com/doda25-team5/operation/pull/10.
+
+#### Nicolas
+Worked on enabling the alerting capabilities in Prometheus so that developers get warned through email https://github.com/doda25-team5/operation/pull/10.
+
+#### Maja:
+Worked on the grafana dashboards to make them working https://github.com/doda25-team5/operation/pull/10. Also fixed the dashboard to make dashboard.local available that was the part that was missing from last week's assignment.
+
+#### Jayran:
+Worked on fixing the last week's assignment on dashboards. Also worked independently on migrating from docker-compose to kubernetes.
+
+#### Vedant: https://github.com/doda25-team5/operation/pull/10, https://github.com/doda25-team5/app/pull/8, https://github.com/doda25-team5/model-service/pull/9
+Worked on creating endpoints for app and model-service to enable monitoring and updated the deployement files to ensure prometheus can access those endpoints. 
+
+#### Priyansh: https://github.com/doda25-team5/operation/pull/10, https://github.com/doda25-team5/app/pull/8, https://github.com/doda25-team5/model-service/pull/9
+Worked independently on migration from docker to kubernetes and helm charts. Collaborated with Erkin and Jayran for this one. Then, I also worked on setting up grafana dashboards with Maja.
+
+## WEEK 5 - Assignment 4
+#### Erkin: https://github.com/doda25-team5/operation/pull/14
+Worked on the assignment a4 adding virtual services, destination rules, gateways and having versioned deployments as v1 and v2. This was the first part of the assignment a4.
+
+#### Jayran:https://github.com/doda25-team5/operation/pull/13 | https://github.com/doda25-team5/operation/pull/12
+This week i went back to A2 to finish some off some things that we didn't do yet. I did the advanced step 8 where you dynamically add the hosts (by extra vars variable) and cleaned/updated the read me section for A2. For A3, I added the mount shared folder part. BUt Im not sure that it's correct since we used docker instead of virtualbox. This might need to be updated later but it works for docker currently. I also updateded the A3 part of the rubric detailing the work. No contributions to A4 a yet.
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/15
+Worked on fixing alerts from the last assignment and changed the approach by implementing gmail alerts.
+
+#### Priyansh: https://github.com/doda25-team5/app/pull/10#
+Spent my time adding metrics for the frontend without any external dependencies. Also currently working on making sure that gmail alerts work with Google app passcode (smtp) and are triggered by Prometheus monitoring the metric.
+
+#### Vedant: https://github.com/doda25-team5/app/pull/10#
+Spend a litle bit of my time in fixing the frontend metrics from last week and have also started implementing a the new feature for A4 where we are beautifying the frontend. The group has decided to create metrics to "test" the new version of the frontend which will be implemented by next week.
+
+#### Maja https://github.com/doda25-team5/app/pull/10# https://github.com/doda25-team5/operation/pull/11
+Worked on improving the app frontend metrics created by Priyansh. Then based on the new image implemented frontend metrings for two Grafana dashboards, making sure there was a sufficient variety between the types of plots and functions applied (avg and rate). 
+
+## WEEK 6 - All Assignments
+
+#### Erkin:
+
+#### Jayran: https://github.com/doda25-team5/operation/pull/17
+I worked on A4 a little bit. The canary deployment and stable deployment were using the same backend and frontend images so i updated the values.yaml to ensure that each deployment have their own tags that they use for the images. For now they are still pointing to the same "latest" image but once we have our addition and create the tag for it, it will be updated.
+
+#### Nicolas: 
+
+#### Priyansh: 
+
+#### Vedant: 
+
+#### Maja: https://github.com/doda25-team5/operation/tree/a2-fixes
+Worked on the A2 assignment this week, specifically steps 8 and 23 for the final presentation. The branch can be merged with the main with no issues but it needs more testing for veryfing if the installation works correctly. 

@@ -4,23 +4,45 @@ metadata:
   name: sms-frontend
   labels:
     app: sms-frontend
+    version: v1
 spec:
   replicas: {{ .Values.replicaCountFrontend }}
   selector:
     matchLabels:
       app: sms-frontend
+      version: v1
   template:
     metadata:
       labels:
         app: sms-frontend
+        version: v1
     spec:
+
+      # OPTIONAL HOSTPATH VOLUME (EXCELLENT LEVEL)
+      volumes:
+        {{- if .Values.hostPath.enabled }}
+        - name: shared-volume
+          hostPath:
+            path: {{ .Values.hostPath.path }}
+            type: Directory
+          {{- end }}
+
       containers:
-      - name: frontend
-        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
-        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.frontend.service.port }}
-          name: http
-        envFrom:
-          - configMapRef:
-              name: sms-frontend-config
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.stableTag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+
+          ports:
+            - containerPort: {{ .Values.frontend.service.port }}
+              name: http
+
+          envFrom:
+            - configMapRef:
+                name: sms-frontend-config
+
+          # CONDITIONAL MOUNT INTO FRONTEND CONTAINER
+          {{- if .Values.hostPath.enabled }}
+          volumeMounts:
+            - name: shared-volume
+              mountPath: {{ .Values.hostPath.mountPath }}
+          {{- end }}

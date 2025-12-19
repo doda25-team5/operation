@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: model-service
+spec:
+  host: "*"
+  subsets:
+    - name: stable
+      labels:
+        version: v1
+    - name: canary
+      labels:
+        version: v2
