@@ -96,5 +96,5 @@ I worked on A4 a little bit. The canary deployment and stable deployment were us
 
 #### Vedant: 
 
-#### Maja: https://github.com/doda25-team5/operation/tree/a2-fixes
-Worked on the A2 assignment this week, specifically steps 8 and 23 for the final presentation. The branch can be merged with the main with no issues but it needs more testing for veryfing if the installation works correctly. 
+#### Maja: https://github.com/doda25-team5/operation/pull/19/
+Worked on the A2 assignment this week, specifically setting up the step 23 for the final submission. The branch can be merged with the main with no conflicts but it needs further testing for veryfing if the everything works correctly. 
