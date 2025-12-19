@@ -92,7 +92,8 @@ I worked on A4 a little bit. The canary deployment and stable deployment were us
 
 #### Nicolas: 
 
-#### Priyansh: 
+#### Priyansh: https://github.com/doda25-team5/operation/pull/16
+Finally managed to make alerts work - [Changed alerts so that they correspond to the frontend image instead of the backend image]. Made changes in the respective yaml templates in helm chart to accept release names on run time. Alerts now trigger and send mails properly when google-app-id is defined in secrets.
 
 #### Vedant: 
 
