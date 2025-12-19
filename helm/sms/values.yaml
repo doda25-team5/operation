@@ -51,3 +51,12 @@ secrets:
   create: false
   smtp_user: ""
   smtp_pass: ""
+
+ingressgateway:
+  ingressGatewayLabel: ingressgateway
+
+
+hostPath:
+  enabled: true
+  path: /mnt/shared
+  mountPath: /mnt/shared

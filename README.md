@@ -298,6 +298,10 @@ minikube addons enable ingress
 minikube addons enable metallb
 ```
 
+### Istio Installation
+```bash
+istioctl install --set profile=default -y
+```
 ### Helm and Prometheus installation
 
 ```bash
