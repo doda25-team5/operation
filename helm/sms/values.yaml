@@ -4,7 +4,7 @@ replicaCountBackend: 1
 frontend:
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "latest" #TODO: be updated to actual stable
+    stableTag: "1.0.0" #TODO: be updated to actual stable
     canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
@@ -49,3 +49,12 @@ secrets:
   create: false
   smtp_user: ""
   smtp_pass: ""
+
+ingressgateway:
+  ingressGatewayLabel: ingressgateway
+
+
+hostPath:
+  enabled: true
+  path: /mnt/shared
+  mountPath: /mnt/shared

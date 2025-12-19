@@ -289,7 +289,7 @@ kubectl --kubeconfig=./admin.conf get deployments -A
 Ensure kubectl and helm are installed. In operations run the following:
 
 ```bash
-minikube start --driver=docker 
+minikube start --driver=docker --memory=4096 --cpus=4
 ```
 
 Enable addons:
@@ -298,6 +298,10 @@ minikube addons enable ingress
 minikube addons enable metallb
 ```
 
+### Istio Installation
+```bash
+istioctl install --set profile=default -y
+```
 ### Helm and Prometheus installation
 
 ```bash
@@ -307,7 +311,14 @@ kubectl create namespace monitoring
 helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
 ```
 ### Intsall sms Helm chart
-
+Since volume mounting is enabled, you need to go to the [Test Mounted Shared Folder](#test-mounted-shared-folder) section to install the helm chart. Or, you could disable it using
+```bash
+hostPath:
+  enabled: false 
+  path: /mnt/shared
+  mountPath: /mnt/shared
+```
+in values.yaml and run the command
 ```bash
 helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
 ```

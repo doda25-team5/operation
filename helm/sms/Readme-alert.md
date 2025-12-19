@@ -14,8 +14,13 @@ export STACK_NAME="sms-monitor"
 ```bash
 minikube delete && minikube start --cpus=4 --memory=6000 --addons=ingress
 ```
+**3. Install Istio**
 
-**3. Install Monitoring Stack**
+```bash
+istioctl install --set profile=demo -y
+```
+
+**4. Install Monitoring Stack**
 ```bash
 kubectl create namespace monitoring
 
