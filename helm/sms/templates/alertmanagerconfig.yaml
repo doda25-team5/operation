@@ -3,15 +3,15 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: sms-alerts
-  namespace: default
+  namespace: monitoring
   labels:
-    release: kube-prometheus-stack
+    release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   route:
     groupBy: ["alertname"]
-    groupWait: 30s
-    groupInterval: 2m
-    repeatInterval: 4h
+    groupWait: 10s
+    groupInterval: 1m
+    repeatInterval: 1h
     receiver: gmail-alerts
     routes:
       - matchers:
