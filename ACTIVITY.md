@@ -95,7 +95,8 @@ I worked on A4 a little bit. The canary deployment and stable deployment were us
 #### Priyansh: https://github.com/doda25-team5/operation/pull/16
 Finally managed to make alerts work - [Changed alerts so that they correspond to the frontend image instead of the backend image]. Made changes in the respective yaml templates in helm chart to accept release names on run time. Alerts now trigger and send mails properly when google-app-id is defined in secrets.
 
-#### Vedant: 
+#### Vedant: https://github.com/doda25-team5/app/pull/11
+Updated the frontend for our application (new feature). Need to set up specific metrics for tracking the implementation of the new feature. 
 
 #### Maja: https://github.com/doda25-team5/operation/pull/19/
 Worked on the A2 assignment this week, specifically setting up the step 23 for the final submission. The branch can be merged with the main with no conflicts but it needs further testing for veryfing if the everything works correctly. 
