@@ -4,7 +4,7 @@ replicaCountBackend: 1
 frontend:
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "1.0.0" #TODO: be updated to actual stable
+    stableTag: "2.1.1" #TODO: be updated to actual stable [for now it's an old version of 'stable']
     canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
