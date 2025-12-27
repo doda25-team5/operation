@@ -1,23 +1,26 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: model-service
+  name: sms-backend
 spec:
   hosts:
     - sms-backend-svc
   http:
+    # frontend v1 → backend v1
     - match:
-        - headers:
-            x-app-version:
-              exact: stable
+        - sourceLabels:
+            app: sms-frontend
+            version: v1
       route:
         - destination:
             host: sms-backend-svc
             subset: stable
+
+    # frontend v2 → backend v2
     - match:
-        - headers:
-            x-app-version:
-              exact: canary
+        - sourceLabels:
+            app: sms-frontend
+            version: v2
       route:
         - destination:
             host: sms-backend-svc

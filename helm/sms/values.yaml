@@ -31,7 +31,7 @@ initContainer:
   hostPath: /mnt/shared/model-data
 
 ingress:
-  enabled: true
+  enabled: false
   host: sms.test.local
   path: "/"
 
@@ -53,8 +53,7 @@ secrets:
 ingressgateway:
   ingressGatewayLabel: ingressgateway
 
-
 hostPath:
-  enabled: true
+  enabled: false
   path: /mnt/shared
   mountPath: /mnt/shared

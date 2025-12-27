@@ -4,15 +4,19 @@ metadata:
   name: sms-frontend
 spec:
   hosts:
-  - "*"
+    - "*"
   gateways:
-  - sms-gateway
+    - sms-gateway
   http:
-  - route:
-    - destination:
-        host: sms-frontend-svc
-        subset: stable
-      weight: 90
+
+    - match:
+        - headers:
+            cookie:
+              regex: ".*sms-user=stable.*"
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
       headers:
         request:
           set:
@@ -21,10 +25,15 @@ spec:
           set:
             version: "v1"
 
-    - destination:
-        host: sms-frontend-svc
-        subset: canary
-      weight: 10
+ 
+    - match:
+        - headers:
+            cookie:
+              regex: ".*sms-user=canary.*"
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
       headers:
         request:
           set:
@@ -32,3 +41,23 @@ spec:
         response:
           set:
             version: "v2"
+
+    # First-time users → 90/10
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 90
+          headers:
+            response:
+              add:
+                Set-Cookie: "sms-user=stable; Path=/"
+
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
+          weight: 10
+          headers:
+            response:
+              add:
+                Set-Cookie: "sms-user=canary; Path=/"

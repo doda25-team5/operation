@@ -1,9 +1,9 @@
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: model-service
+  name: sms-backend
 spec:
-  host: "*"
+  host: sms-backend-svc
   subsets:
     - name: stable
       labels:
