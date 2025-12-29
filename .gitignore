@@ -5,7 +5,7 @@ id_rsa
 id_ed25519
 *.pem
 *.key
-*.sh
+create_chart_minimal.sh
 id_rsa.pub
 id_ed25519.pub
 !vagrant/keys/

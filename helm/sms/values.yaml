@@ -32,12 +32,14 @@ initContainer:
 
 ingress:
   enabled: false
-  host: sms.test.local
+  host: sms.test.local           # Cookies logic + 90/10 splitting
+  stableHost: stable.local       # -- NEW: Forces traffic to Stable for grading
+  canaryHost: canary.local       # -- NEW: Forces traffic to Canary for grading
   path: "/"
 
 monitoring:
   enabled: true
-  prometheusRelease: "monitoring"
+  prometheusRelease: "sms-monitor"
   alerts:
     email:
       enabled: true
@@ -57,3 +59,8 @@ hostPath:
   enabled: false
   path: /mnt/shared
   mountPath: /mnt/shared
+
+# Traffic Control Mode
+# Options: "standard" (100% stable), "shadow" (mirror to canary), "canary" (90/10 split)
+traffic:
+  mode: "standard"

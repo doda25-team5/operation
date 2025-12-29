@@ -8,7 +8,33 @@ spec:
   gateways:
     - sms-gateway
   http:
+    # for grading purposes
+    - match:
+        - authority:
+            exact: {{ .Values.ingress.canaryHost | quote }} 
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
+      headers:
+        response:
+          set:
+            version: "v2-direct"
 
+
+    - match:
+        - authority:
+            exact: {{ .Values.ingress.stableHost | quote }} 
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+      headers:
+        response:
+          set:
+            version: "v1-direct"
+
+    # cookie based
     - match:
         - headers:
             cookie:
@@ -25,7 +51,7 @@ spec:
           set:
             version: "v1"
 
- 
+
     - match:
         - headers:
             cookie:
@@ -42,7 +68,28 @@ spec:
           set:
             version: "v2"
 
-    # First-time users → 90/10
+    # --- DYNAMIC ROUTING ---
+    {{ if eq .Values.traffic.mode "shadow" }}
+    # [Mode: Shadow] Excellent Use Case
+    # 100% traffic to Stable, but MIRRORED to Canary (V2)
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 100
+          headers:
+            response:
+              set:
+                version: "v1"
+      mirror:
+        host: sms-frontend-svc
+        subset: canary
+      mirrorPercentage:
+        value: 100.0
+
+    {{ else if eq .Values.traffic.mode "canary" }}
+    # [Mode: Canary] A4 Experiment
+    # 90/10 Split with Cookie Injection
     - route:
         - destination:
             host: sms-frontend-svc
@@ -52,7 +99,6 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=stable; Path=/"
-
         - destination:
             host: sms-frontend-svc
             subset: canary
@@ -61,3 +107,17 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=canary; Path=/"
+
+    {{ else }}
+    # [Mode: Standard] Default Safety
+    # 100% Stable (V1)
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 100
+          headers:
+            response:
+              set:
+                version: "v1"
+    {{ end }}

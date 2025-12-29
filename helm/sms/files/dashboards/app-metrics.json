@@ -1,73 +1,70 @@
 {
-  "uid": "sms-frontend-dashboard",
-  "title": "SMS Frontend Metrics",
+  "uid": "sms-frontend-overview",
+  "title": "SMS Frontend Overview",
   "schemaVersion": 39,
   "timezone": "browser",
   "refresh": "5s",
-
   "templating": {
     "list": [
       {
         "name": "interval",
         "type": "interval",
-        "query": "30s,1m,5m,10m,30m,1h",
+        "query": "30s,1m,5m,10m",
         "current": { "selected": true, "text": "1m", "value": "1m" },
-        "label": "Time Interval"
+        "label": "Interval"
       }
     ]
   },
-
   "panels": [
-
     {
       "type": "gauge",
-      "title": "Active Sessions",
-      "id": 1,
+      "title": "Cumulative Sessions Started",
+      "description": "Total number of unique sessions initiated since pod start.",
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] }
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false
       },
       "targets": [
-        { "expr": "frontend_active_sessions", "refId": "A" }
+        {
+          "expr": "frontend_active_sessions",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
       ]
     },
-
     {
       "type": "timeseries",
-      "title": "Average SMS Length",
-      "id": 3,
+      "title": "Total Requests (Absolute)",
       "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
       "targets": [
         {
-          "expr": "sms_input_length_sum / sms_input_length_count",
-          "legendFormat": "Average Length",
+          "expr": "increase(sms_requests_total[$interval])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ]
     },
-
     {
       "type": "timeseries",
-      "title": "Spam vs Ham Predictions (rate)",
-      "id": 3,
+      "title": "Spam vs Ham Rate per Frontend Pod",
       "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
       "options": {
         "displayMode": "bars",
-        "barWidth": 0.9
+        "barWidth": 0.85
       },
       "targets": [
         {
-          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category)",
-          "legendFormat": "{{category}}",
+          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category, pod)",
+          "legendFormat": "{{pod}} – {{category}}",
           "refId": "A"
         }
       ]
     },
-
     {
       "type": "heatmap",
-      "title": "SMS Length",
-      "id": 5,
+      "title": "SMS Input Length Distribution",
       "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
       "targets": [
         {
@@ -83,8 +80,6 @@
         }
       }
     }
-
   ],
-
-  "time": { "from": "now-15m", "to": "now" }
+  "time": { "from": "now-30m", "to": "now" }
 }

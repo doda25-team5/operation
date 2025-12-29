@@ -1,57 +1,47 @@
 {
-  "uid": "sms-decision-dashboard",
-  "title": "SMS Decision Dashboard",
+  "uid": "sms-a4-experiment",
+  "title": "SMS A4 Experiment Dashboard",
   "schemaVersion": 39,
   "timezone": "browser",
   "refresh": "5s",
-
   "templating": {
     "list": [
       {
         "name": "interval",
         "type": "interval",
-        "query": "1m,5m,10m,30m,1h,6h,12h,24h",
-        "current": { "selected": true, "text": "10m", "value": "10m" },
+        "query": "30s,1m,5m,10m",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
         "label": "Interval"
       }
     ]
   },
-
   "panels": [
-
     {
       "type": "timeseries",
-      "title": "P95 Request Latency",
-      "id": 1,
+      "title": "User Engagement (Request Rate)",
+      "description": "Hypothesis: Better UI leads to higher interaction frequency. Canary (v2) should show higher RPS than Stable (v1).",
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(frontend_request_latency_seconds_bucket[$interval])) by (le))",
-          "legendFormat": "P95 Latency",
+          "expr": "rate(sms_requests_total[$interval])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ]
     },
-
     {
       "type": "timeseries",
-      "title": "Spam vs Ham Ratio",
-      "id": 2,
+      "title": "P95 Latency (Safety Metric)",
+      "description": "Canary must not increase tail latency.",
       "gridPos": { "x": 0, "y": 10, "w": 24, "h": 10 },
       "targets": [
         {
-          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category)",
-          "legendFormat": "{{category}}",
+          "expr": "histogram_quantile(0.95, sum by (le, pod)(rate(frontend_request_latency_seconds_bucket[$interval])))",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
-      ],
-      "options": {
-        "displayMode": "bars",
-        "barWidth": 0.9
-      }
+      ]
     }
-
   ],
-
-  "time": { "from": "now-2h", "to": "now" }
+  "time": { "from": "now-15m", "to": "now" }
 }
