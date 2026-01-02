@@ -18,14 +18,14 @@ spec:
         version: v1
     spec:
 
-      # OPTIONAL HOSTPATH VOLUME (EXCELLENT LEVEL)
-      volumes:
-        {{- if .Values.hostPath.enabled }}
-        - name: shared-volume
-          hostPath:
-            path: {{ .Values.hostPath.path }}
-            type: Directory
-          {{- end }}
+      # # OPTIONAL HOSTPATH VOLUME (EXCELLENT LEVEL)
+      # volumes:
+      #   {{- if .Values.hostPath.enabled }}
+      #   - name: shared-volume
+      #     hostPath:
+      #       path: {{ .Values.hostPath.path }}
+      #       type: Directory
+      #     {{- end }}
 
       containers:
         - name: frontend
@@ -40,9 +40,9 @@ spec:
             - configMapRef:
                 name: sms-frontend-config
 
-          # CONDITIONAL MOUNT INTO FRONTEND CONTAINER
-          {{- if .Values.hostPath.enabled }}
-          volumeMounts:
-            - name: shared-volume
-              mountPath: {{ .Values.hostPath.mountPath }}
-          {{- end }}
+          # # CONDITIONAL MOUNT INTO FRONTEND CONTAINER
+          # {{- if .Values.hostPath.enabled }}
+          # volumeMounts:
+          #   - name: shared-volume
+          #     mountPath: {{ .Values.hostPath.mountPath }}
+          # {{- end }}

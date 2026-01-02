@@ -4,7 +4,7 @@ replicaCountBackend: 1
 frontend:
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "1.0.0" #TODO: be updated to actual stable
+    stableTag: "2.1.1" #TODO: be updated to actual stable [for now it's an old version of 'stable']
     canaryTag: "latest" #TODO: be updated to actual canary
     pullPolicy: IfNotPresent
   service:
@@ -31,13 +31,15 @@ initContainer:
   hostPath: /mnt/shared/model-data
 
 ingress:
-  enabled: true
-  host: sms.test.local
+  enabled: false
+  host: sms.test.local           # Cookies logic + 90/10 splitting
+  stableHost: stable.local       # -- NEW: Forces traffic to Stable for grading
+  canaryHost: canary.local       # -- NEW: Forces traffic to Canary for grading
   path: "/"
 
 monitoring:
   enabled: true
-  prometheusRelease: "monitoring"
+  prometheusRelease: "sms-monitor"
   alerts:
     email:
       enabled: true
@@ -53,8 +55,12 @@ secrets:
 ingressgateway:
   ingressGatewayLabel: ingressgateway
 
-
 hostPath:
-  enabled: true
+  enabled: false
   path: /mnt/shared
   mountPath: /mnt/shared
+
+# Traffic Control Mode
+# Options: "standard" (100% stable), "shadow" (mirror to canary), "canary" (90/10 split)
+traffic:
+  mode: "standard"

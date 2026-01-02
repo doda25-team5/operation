@@ -282,207 +282,196 @@ kubectl --kubeconfig=./admin.conf get ingress -A
 kubectl --kubeconfig=./admin.conf get daemonset -A
 kubectl --kubeconfig=./admin.conf get deployments -A
 ```
-## A3: Operate and Monitor Kubernetes
+## A3 (and some of A4): Operate and Monitor Kubernetes
 
-### Minikube setup
+### 1. Environment Setup
 
-Ensure kubectl and helm are installed. In operations run the following:
+Set these variables in *all* terminals that you use for the following setup to ensure consistency across commands:
 
 ```bash
-minikube start --driver=docker --memory=4096 --cpus=4
+export STACK_NAME="sms-monitor"
+export APP_NS="sms"
+export MON_NS="monitoring"
 ```
 
-Enable addons:
+### 2. Infrastructure Setup (Minikube & Istio)
+
+We need the cluster and the Service Mesh installed *before* deploying the app.
+
 ```bash
-minikube addons enable ingress
+# 1. Start Minikube
+minikube start --driver=docker --memory=6144 --cpus=4
 minikube addons enable metallb
-```
+minikube addons enable ingress
 
-### Istio Installation
-```bash
+# 2. Install Istio (Required for the App's Gateway)
 istioctl install --set profile=default -y
 ```
-### Helm and Prometheus installation
+
+### 3. Install Monitoring Stack
 
 ```bash
+kubectl create namespace $MON_NS
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-kubectl create namespace monitoring
-helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --wait
-```
-### Intsall sms Helm chart
-Since volume mounting is enabled, you need to go to the [Test Mounted Shared Folder](#test-mounted-shared-folder) section to install the helm chart. Or, you could disable it using
-```bash
-hostPath:
-  enabled: false 
-  path: /mnt/shared
-  mountPath: /mnt/shared
-```
-in values.yaml and run the command
-```bash
-helm upgrade --install sms ./helm/sms -n default --create-namespace --wait
-```
-## Push ConfigMap into monitoring
 
-```bash
-helm template ./helm/sms -s templates/grafana-dashboards-configmap.yaml | kubectl apply -n monitoring -f -
+# Install Prometheus/Grafana
+helm install $STACK_NAME prometheus-community/kube-prometheus-stack \
+  -n $MON_NS \
+  --wait
 ```
 
-## Port Forwards
+### 4. Secrets & Configuration
 
-Run each forward in a separate terminal:
+**A. Create Gmail Secret (For Alerts)**
+Replace `YOUR_16_CHAR_CODE` with your Google App Password (from [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)):
 
-Frontend (open http://localhost:8080):
 ```bash
-POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward -n default pod/$POD 8080:8080
+kubectl create secret generic sms-secrets \
+  --from-literal=smtp_pass="YOUR_16_CHAR_CODE" \
+  -n $MON_NS
 ```
 
-Backend (open http://localhost:8081/apidocs and http://localhost:8081/metrics):
-```bash
-POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward -n default pod/$POD 8081:8081
+**B. Configure values.yaml**
+Ensure `helm/sms/values.yaml` matches your monitoring stack and email settings. 
+**Important:** Update all three email fields to your own address.
+
+```yaml
+monitoring:
+  enabled: true
+  prometheusRelease: "sms-monitor" # Matches $STACK_NAME
+  alerts:
+    email:
+      enabled: true
+      to: "your.email@gmail.com"
+      from: "your.email@gmail.com"      # Required for SMTP auth
+      username: "your.email@gmail.com"  # Required for SMTP auth
 ```
 
-Prometheus (open http://localhost:9090/targets and http://localhost:9090/rules):
-```bash
-kubectl -n monitoring port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090
-```
+### 5. Deploy SMS Application
 
-Grafana (open http://localhost:3000):
-```bash
-kubectl -n monitoring port-forward svc/prometheus-grafana 3000:80
-```
-Grafana admin password:
-```bash
-kubectl get secret -n monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
-```
-
-### Helm chart for SMS app
-```bash
-helm upgrade --install sms ./ -n default --create-namespace --set ingress.host=sms.test.local
-```
-
-#### Secrets 
-Do NOT put secrets in values.yaml. Create Kubernetes secret in the following way:
-```bash
-kubectl create secret generic sms-secrets --from-literal=smtp_user='<USER>' --from-literal=smtp_pass='<PASS>' -n default
-```
-Monitoring:
-```bash
-  Enable with --set monitoring.enabled=true
-```
-Prometheus Alertmanager must authenticate via SMTP to send emails. You have to manually create the SMTP secret locally before deploying.
-
-### Test Mounted Shared Folder
-
-#### Start Minikube
+Now that Infrastructure and Monitoring are ready, we deploy the app.
 
 ```bash
-minikube start --driver=docker
-```
+# 1. Create App Namespace with Istio Injection
+kubectl create namespace $APP_NS
+kubectl label namespace $APP_NS istio-injection=enabled --overwrite
 
-#### (Important) Allow mount port through firewall (Ubuntu only)
-
-Minikube mount uses a TCP port for communication between host ↔ node.
-Some Ubuntu systems block this unless explicitly allowed.
-
-Allow a safe port:
-
-```bash
-sudo ufw allow 20000/tcp
-#(This step is harmless even if UFW is disabled.)
-```
-
-#### Start the host -> Minikube mount
-
-Run this in a seperate terminal window
-Do not close this terminal while testing
-
-```bash
-minikube mount $(pwd)/shared:/mnt/shared --port=20000
-```
-
-You should see something like ✅ Successfully mounted.
-
-#### Deploy the application
-
-```bash
+# 2. Deploy the Helm Chart
 helm upgrade --install sms ./helm/sms \
-   -n default \
---create-namespace
+  -n $APP_NS \
+  --create-namespace \
+  --wait
 ```
 
-If it fails due to prometheus not being installed then you must install it first.
+### 6. Verification I: Alerts (A3)
 
-Wait for the pod to be running:
+Now that the app is running, we can trigger the monitoring alerts.
+
+**1. Find Service Names:**
+Run this to see the exact names of your Prometheus and Alertmanager services:
+```bash
+kubectl get svc -n $MON_NS
+```
+
+**2. Port Forwarding:**
+(Replace `SERVICE_NAME` below with the actual names found in step 1)
 
 ```bash
-kubectl get pods -n default
+# Forward Prometheus (e.g., sms-monitor-kube-prometheu-prometheus)
+kubectl port-forward -n $MON_NS svc/YOUR_PROMETHEUS_SERVICE_NAME 9090:9090
+
+# Forward Alertmanager (e.g., sms-monitor-kube-prometheu-alertmanager)
+kubectl port-forward -n $MON_NS svc/YOUR_ALERTMANAGER_SERVICE_NAME 9093:9093
+
+# Forward Grafana and Get Password
+kubectl get secret --namespace $MON_NS $STACK_NAME-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+kubectl port-forward -n $MON_NS svc/$STACK_NAME-grafana 3000:80 
+```
+**3. Trigger HighRequestRate Alert:**
+Send traffic to the Ingress to simulate load. [Please refer to the first section in A4 to add the hosts for curl]
+
+* **Linux/Mac:**
+```bash
+for i in {1..200}; do 
+  curl -s -X POST http://sms.test.local/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"load test message","guess":"ham"}' > /dev/null; 
+  sleep 1; 
+done
 ```
 
-#### Verify the mount inside the Pod
+*Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the alert fire.*
 
-Get the frontend pod name:
+---
+
+## A4: Istio Service Mesh & Continuous Experimentation
+
+## Part 1: Shadow Launch 
+
+**Goal:** Deploy V2 (Canary) and mirror real traffic to it without users knowing.
+
+### 1. Enable Shadow Mode
+We use the dynamic traffic switch to route 100% of users to Stable (V1) but mirror a copy to Canary (V2).
 
 ```bash
-POD=$(kubectl get pod -n default -l app=sms-frontend -o jsonpath='{.items[0].metadata.name}')
+helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=shadow
 ```
 
-Check the shared directory:
-
+### 2. Generate Traffic
+Run this loop to mimic user activity (POST requests).
 ```bash
-kubectl exec -it -n default $POD -- ls /mnt/shared
+for i in {1..20}; do 
+  echo -n "Request $i: "
+  curl -s -i -X POST http://sms.test.local/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"shadow launch test","guess":"ham"}' | grep -i "version:"
+  sleep 0.5
+done
 ```
 
-Expected output:
-
+### 3. Verification 
+Proof that V2 received the traffic by checking its logs. We filter specifically for the **backend container** to avoid Istio noise.
+Run the following in a new terminal:
 ```bash
-example.txt
+# Follow the live traffic on the V2 backend (only shows new logs)
+kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
+```
+*Look for lines like: `"POST /predict HTTP/1.1" 200`*
+
+---
+
+## Part 2: Canary Release (The Experiment)
+
+**Goal:** Release V2 to 10% of users and measure engagement.
+
+### 1. Enable Canary Mode (90/10 Split)
+```bash
+# Apply Canary Split
+helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=canary
 ```
 
-### Alerting Setup:
-   - Generate your own Gmail App Password
-      - Go to: https://myaccount.google.com/apppasswords
-      - Create an app password and name it: “Kubernetes”
-      - Google will give you a 16-character App Password
-      - Copy it, you will need it in the next step
-   - Create the Kubernetes secret
-      - kubectl -n default create secret generic sms-secrets --from-literal=smtp_user='your.email@gmail.com' --from-literal=smtp_pass='YOUR_APP_PASSWORD'
-      - NOTE: change your.email@gmail.com with your own gmail and YOUR_APP_PASSWORD with the 16-character App Password you just created (remove the spaces in the code).
-   - Where Alertmanager sends the email (Important)
-      - By default, the alert email is sent to nicoloaiza16@gmail.com unless you change this.
-      - If you want to test it and send the alert to your own gmail: go to helm/sms/values.yaml and replace these three lines with your own gmail:
-        - to: "nicoloaiza16@gmail.com" -> to: "your.email@gmail.com"
-        - from: "nicoloaiza16@gmail.com" -> from: "your.email@gmail.com"
-        - username: "nicoloaiza16@gmail.com" -> username: "your.email@gmail.com"
-   - Redeploy Helm chart
-     - helm upgrade --install sms ./helm/sms -n default --wait
-   - Port-forward backend and Prometheus (if not done already)
-     - POD=$(kubectl get pod -n default -l app=sms-backend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward -n default pod/$POD 8081:8081
-     - kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
-   - Trigger alert
-     - Windows:
-       - $body=@{sms="load test message"}|ConvertTo-Json; $end=(Get-Date).AddMinutes(3); while((Get-Date) -lt $end){1..30|%{try{Invoke-RestMethod -Uri http://localhost:8081/predict -Method POST -Body $body -ContentType 'application/json'|Out-Null}catch{}}; Start-Sleep -Milliseconds 300}; Write-Host 'Done! Check Prometheus: http://localhost:9090/alerts'
+### 2. Verify Sticky Sessions
+Ensure cookies still pin users to versions.
+```bash
+# Should be V1
+curl -I --cookie "sms-user=stable" http://sms.test.local/sms
 
-     - MacOS/Linux:
-       - for i in {1..1200}; do curl -s -X POST http://localhost:8081/predict -H 'Content-Type: application/json' -d '{"sms":"load test message"}' >/dev/null; sleep 0.1; done; echo 'Done! Check Prometheus: http://localhost:9090/alerts'
+# Should be V2
+curl -I --cookie "sms-user=canary" http://sms.test.local/sms
+```
 
-   - Verify the alert and gmail delivery
-     - Open http://localhost:9090/alerts
-     - Find the alert named HighRequestRate
-     - It will transition from Inactive -> Pending -> Firing (This takes around 3 minutes)
-     - Once its Firing check your gmail inbox
-  
-## A4: Istio Service Mesh
-  
-- To test 90 / 10 split
-- minikube tunnel
-- for i in {1..20}; do curl -si -H "x-user: bob" http://localhost/sms | grep version; done (mac/linux)
-- for ($i=1; $i -le 20; $i++) {
-    curl -Headers @{"x-user"="bob"} http://localhost/sms -UseBasicParsing | Select-String version
-} (windows)
+### 3. Run the Experiment 
+Generate the traffic for your Grafana graphs.
+```bash
+chmod +x run-experiment.sh
+./run-experiment.sh
+```
 
-
+### 4. Verification
+Go to [http://localhost:3000](http://localhost:3000).
+* **Graph:** User Engagement (Request Rate).
+* **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.
 

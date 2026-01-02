@@ -4,15 +4,45 @@ metadata:
   name: sms-frontend
 spec:
   hosts:
-  - "*"
+    - "*"
   gateways:
-  - sms-gateway
+    - sms-gateway
   http:
-  - route:
-    - destination:
-        host: sms-frontend-svc
-        subset: stable
-      weight: 90
+    # for grading purposes
+    - match:
+        - authority:
+            exact: {{ .Values.ingress.canaryHost | quote }} 
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
+      headers:
+        response:
+          set:
+            version: "v2-direct"
+
+
+    - match:
+        - authority:
+            exact: {{ .Values.ingress.stableHost | quote }} 
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+      headers:
+        response:
+          set:
+            version: "v1-direct"
+
+    # cookie based
+    - match:
+        - headers:
+            cookie:
+              regex: ".*sms-user=stable.*"
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
       headers:
         request:
           set:
@@ -21,10 +51,15 @@ spec:
           set:
             version: "v1"
 
-    - destination:
-        host: sms-frontend-svc
-        subset: canary
-      weight: 10
+
+    - match:
+        - headers:
+            cookie:
+              regex: ".*sms-user=canary.*"
+      route:
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
       headers:
         request:
           set:
@@ -32,3 +67,57 @@ spec:
         response:
           set:
             version: "v2"
+
+    # --- DYNAMIC ROUTING ---
+    {{ if eq .Values.traffic.mode "shadow" }}
+    # [Mode: Shadow] Excellent Use Case
+    # 100% traffic to Stable, but MIRRORED to Canary (V2)
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 100
+          headers:
+            response:
+              set:
+                version: "v1"
+      mirror:
+        host: sms-frontend-svc
+        subset: canary
+      mirrorPercentage:
+        value: 100.0
+
+    {{ else if eq .Values.traffic.mode "canary" }}
+    # [Mode: Canary] A4 Experiment
+    # 90/10 Split with Cookie Injection
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 90
+          headers:
+            response:
+              add:
+                Set-Cookie: "sms-user=stable; Path=/"
+        - destination:
+            host: sms-frontend-svc
+            subset: canary
+          weight: 10
+          headers:
+            response:
+              add:
+                Set-Cookie: "sms-user=canary; Path=/"
+
+    {{ else }}
+    # [Mode: Standard] Default Safety
+    # 100% Stable (V1)
+    - route:
+        - destination:
+            host: sms-frontend-svc
+            subset: stable
+          weight: 100
+          headers:
+            response:
+              set:
+                version: "v1"
+    {{ end }}
