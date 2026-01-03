@@ -132,8 +132,7 @@ ping -c 3 node-2
 exit
 ```
 
-### Host to VM
-
+### Host to VMv
 ```bash
 ping -c 3 ctrl
 ping -c 3 node-1
@@ -207,6 +206,7 @@ and paste the following:
 ```bash
 192.168.56.90  dashboard.local
 ```
+
 #### Access the dashboard via your browser
 
 Pase this url in your broswer to access the dashboard
@@ -325,13 +325,15 @@ helm install $STACK_NAME prometheus-community/kube-prometheus-stack \
 ### 4. Secrets & Configuration
 
 **A. Create Gmail Secret (For Alerts)**
-Replace `YOUR_16_CHAR_CODE` with your Google App Password (from [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)):
+Replace `YOUR_16_CHAR_CODE` with your Google App Password (from [myaccount.google.com/apppasswords - remember to remove spaces from your app password](https://myaccount.google.com/apppasswords)):
 
 ```bash
 kubectl create secret generic sms-secrets \
   --from-literal=smtp_pass="YOUR_16_CHAR_CODE" \
   -n $MON_NS
 ```
+
+
 
 **B. Configure values.yaml**
 Ensure `helm/sms/values.yaml` matches your monitoring stack and email settings. 
@@ -376,13 +378,17 @@ kubectl get svc -n $MON_NS
 ```
 
 **2. Port Forwarding:**
+
 (Replace `SERVICE_NAME` below with the actual names found in step 1)
+
+** Reminder to add your stack every time you open a new terminal for the commands below.**
 
 ```bash
 # Forward Prometheus (e.g., sms-monitor-kube-prometheu-prometheus)
 kubectl port-forward -n $MON_NS svc/YOUR_PROMETHEUS_SERVICE_NAME 9090:9090
 
 # Forward Alertmanager (e.g., sms-monitor-kube-prometheu-alertmanager)
+# Reminde
 kubectl port-forward -n $MON_NS svc/YOUR_ALERTMANAGER_SERVICE_NAME 9093:9093
 
 # Forward Grafana and Get Password
@@ -390,8 +396,43 @@ kubectl get secret --namespace $MON_NS $STACK_NAME-grafana -o jsonpath="{.data.a
 
 kubectl port-forward -n $MON_NS svc/$STACK_NAME-grafana 3000:80 
 ```
+
 **3. Trigger HighRequestRate Alert:**
+Before running the code below, please run the following:
+
+```bash
+minikube tunnel
+```
+
+Get the External IP of the Istio Ingress Gateway
+Wait until 'EXTERNAL-IP' is a real IP and not <pending>
+```bash
+kubectl get svc -n istio-system istio-ingressgateway
+```
+
+
+Add the entry to your hosts file
+Replace <IP> with the value from the command above
+Use the command below to open your host file in edit mode.
+
+```bash
+sudo nano /etc/hosts
+```
+
+Replace the <IP> with the External IP you recieved on running the following command above:
+```bash
+kubectl get svc -n istio-system istio-ingressgateway
+``` 
+
+Add this line at the bottom of your `/etc/hosts`
+
+```bash
+<IP>  sms.test.local canary.local stable.local
+```
+
+
 Send traffic to the Ingress to simulate load. [Please refer to the first section in A4 to add the hosts for curl]
+
 
 * **Linux/Mac:**
 ```bash
@@ -474,4 +515,6 @@ chmod +x run-experiment.sh
 Go to [http://localhost:3000](http://localhost:3000).
 * **Graph:** User Engagement (Request Rate).
 * **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.
+
+
 
