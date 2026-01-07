@@ -11,12 +11,12 @@ spec:
   - name: sms.rules
     rules:
     - alert: HighRequestRate
-      expr: increase(sms_requests_total[2m]) > 30
-      for: 2m
+      expr: increase(sms_requests_total[1m]) > 15
+      for: 1m
       labels:
         severity: warning
         namespace: monitoring   # <--- REQUIRED TO MATCH CONFIG
       annotations:
         summary: "High request rate on SMS frontend"
-        description: "More than ~15 requests/min for 2 minutes"
+        description: "More than ~15 requests/min for 1 minutes"
 {{- end }}
