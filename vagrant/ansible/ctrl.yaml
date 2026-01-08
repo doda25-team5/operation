@@ -176,3 +176,74 @@
         content: "{{ kubeadm_join_cmd.stdout }}"
         mode: '0755'
       when: adminconf_after.stat.exists   # ensures init finished
+
+    # ─────────────────────────────────────────────────────────────
+    # STEP 23 — Download and Install Istio
+    # ─────────────────────────────────────────────────────────────
+    - name: Detect system architecture
+      ansible.builtin.command: uname -m
+      register: system_arch
+      changed_when: false
+
+    - name: Set Istio architecture variable
+      ansible.builtin.set_fact:
+        istio_arch: "{{ 'arm64' if system_arch.stdout == 'aarch64' else 'amd64' }}"
+
+    - name: Fail if unsupported architecture
+      ansible.builtin.fail:
+        msg: "Unsupported architecture: {{ system_arch.stdout }}. Istio only supports x86_64 (amd64) and aarch64 (arm64)."
+      when: system_arch.stdout not in ['x86_64', 'aarch64']
+
+    - name: Download Istio 1.25.2
+      ansible.builtin.unarchive:
+        src: "https://github.com/istio/istio/releases/download/1.25.2/istio-1.25.2-linux-arm64.tar.gz"
+        dest: /home/vagrant/
+        remote_src: yes
+        owner: vagrant
+        group: vagrant
+        creates: /home/vagrant/istio-1.25.2
+
+    - name: Add istioctl to vagrant user's PATH in .bashrc
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.bashrc
+        line: 'export PATH="/home/vagrant/istio-1.25.2/bin:$PATH"'
+        create: yes
+        owner: vagrant
+        group: vagrant
+
+    - name: Copy Istio custom configuration (optional - for fixed LoadBalancer IP)
+      ansible.builtin.copy:
+        dest: /home/vagrant/istio-config.yaml
+        content: |
+          apiVersion: install.istio.io/v1alpha1
+          kind: IstioOperator
+          spec:
+            components:
+              ingressGateways:
+              - name: istio-ingressgateway
+                enabled: true
+                k8s:
+                  service:
+                    type: LoadBalancer
+                    loadBalancerIP: "192.168.56.91"
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+
+    - name: Install Istio with custom config
+      ansible.builtin.command:
+        cmd: /home/vagrant/istio-1.25.2/bin/istioctl install -y -f /home/vagrant/istio-config.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      become_user: vagrant
+      register: istio_install
+      changed_when: "'✔ Istio core installed' in istio_install.stdout or 'unchanged' not in istio_install.stdout"
+
+    - name: Wait for Istio ingressgateway to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig /home/vagrant/.kube/config wait -n istio-system -l app=istio-ingressgateway --for=condition=ready pod --timeout=180s
+      register: _wait_istio
+      until: _wait_istio.rc == 0
+      retries: 15
+      delay: 10
+      become_user: vagrant
