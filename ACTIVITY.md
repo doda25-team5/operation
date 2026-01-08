@@ -100,3 +100,21 @@ Updated the frontend for our application (new feature). Need to set up specific 
 
 #### Maja: https://github.com/doda25-team5/operation/pull/19/
 Worked on the A2 assignment this week, specifically setting up the step 23 for the final submission. The branch can be merged with the main with no conflicts but it needs further testing for veryfing if the everything works correctly. 
+
+## WEEK 7 - All Assignments
+
+#### Erkin: 
+
+#### Jayran: https://github.com/doda25-team5/operation/pull/23
+Worked on A4 for a bit. Started writing up the deployment documentation. Still have lots to write. 
+
+#### Nicolas: 
+
+#### Priyansh: 
+
+#### Vedant:
+
+#### Maja: 
+
+
+
