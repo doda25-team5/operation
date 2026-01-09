@@ -116,7 +116,9 @@ Worked on A4, specifically drafted the extension proposal section
 
 #### Vedant:
 
-#### Maja: 
+#### Maja: https://github.com/doda25-team5/operation/pull/27 https://github.com/doda25-team5/operation/pull/24 https://github.com/doda25-team5/model-service/pull/10
+Worked on improving the A2 Readme for the final presentation. For A4 I improved the existing backend image for model versioning in model-service. Then in operation respository tried to display the metrics and their versions (v1-stable, v2-canary) by adding the prometheus metrics and using a new Grafana dashboard. These parts still needs testing.
+
 
 
 
