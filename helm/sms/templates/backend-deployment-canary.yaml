@@ -67,6 +67,10 @@ spec:
             - configMapRef:
                 name: sms-backend-config
 
+          env:
+            - name: MODEL_VERSION
+              value: "v2"
+
           {{- if .Values.initContainer.enabled }}
           volumeMounts:
             - name: model-data

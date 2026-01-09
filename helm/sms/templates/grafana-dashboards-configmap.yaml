@@ -11,3 +11,5 @@ data:
   decision-a4.json: |-
 {{ (.Files.Get "files/dashboards/decision-a4.json") | indent 4 }}
 {{- end }}
+  model-metrics.json: |-
+{{ (.Files.Get "files/dashboards/model-metrics.json") | indent 4 }}

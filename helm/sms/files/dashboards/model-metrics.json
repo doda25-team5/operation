@@ -1,0 +1,63 @@
+{
+  "uid": "sms-model-overview",
+  "title": "SMS Model Overview",
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "5s",
+  "templating": {
+    "list": [
+      {
+        "name": "interval",
+        "type": "interval",
+        "query": "30s,1m,5m,10m",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
+        "label": "Interval"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "gauge",
+      "title": "Model File Size (bytes)",
+      "description": "Size of the loaded model file.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false
+      },
+      "targets": [
+        {
+          "expr": "model_file_size_bytes",
+          "legendFormat": "{{version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Total Model Predictions",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "increase(model_predictions_total[$interval])",
+          "legendFormat": "{{version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Prediction Latency (seconds)",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(model_prediction_latency_seconds_bucket[$interval])) by (le, version))",
+          "legendFormat": "p95 {{version}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "time": { "from": "now-30m", "to": "now" }
+}
