@@ -108,7 +108,8 @@ Worked on the A2 assignment this week, specifically setting up the step 23 for t
 #### Jayran: https://github.com/doda25-team5/operation/pull/23
 Worked on A4 for a bit. Started writing up the deployment documentation. Still have lots to write. 
 
-#### Nicolas: 
+#### Nicolas: https://github.com/doda25-team5/operation/pull/25
+Worked on A4, specifically drafted the extension proposal section
 
 #### Priyansh: 
 
