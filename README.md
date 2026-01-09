@@ -381,7 +381,12 @@ kubectl get svc -n $MON_NS
 
 (Replace `SERVICE_NAME` below with the actual names found in step 1)
 
-** Reminder to add your stack every time you open a new terminal for the commands below.**
+** Reminder to add your stack every time you open a new terminal for port forwarding using the commands below**
+```bash
+export STACK_NAME="sms-monitor"
+export APP_NS="sms"
+export MON_NS="monitoring"
+```
 
 ```bash
 # Forward Prometheus (e.g., sms-monitor-kube-prometheu-prometheus)
@@ -436,12 +441,13 @@ Send traffic to the Ingress to simulate load. [Please refer to the first section
 
 * **Linux/Mac:**
 ```bash
-for i in {1..200}; do 
+seq 1 200 | xargs -n1 -P10 -I{} bash -c '
+  echo "Sending request #{}"
   curl -s -X POST http://sms.test.local/sms \
     -H "Content-Type: application/json" \
-    -d '{"sms":"load test message","guess":"ham"}' > /dev/null; 
-  sleep 1; 
-done
+    -d "{\"sms\":\"load test message\",\"guess\":\"ham\"}"
+  echo ""
+'
 ```
 
 *Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the alert fire.*
@@ -462,7 +468,7 @@ helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=shadow
 ```
 
 ### 2. Generate Traffic
-Run this loop to mimic user activity (POST requests).
+Run this loop to mimic user activity (POST requests). Immediately after running this loop, run step 3 on a new terminal to verify the mirroring.
 ```bash
 for i in {1..20}; do 
   echo -n "Request $i: "
@@ -494,7 +500,18 @@ kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
 helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=canary
 ```
 
-### 2. Verify Sticky Sessions
+### 2. Test Canary Mode on Mac/Linux(90/10 Split)
+```bash
+# Should see many v1 headers and very limited amount of v2 headers
+for i in {1..20}; do 
+  echo -n "Request $i: "
+  curl -s -i -X POST http://sms.test.local/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"shadow launch test","guess":"ham"}' \
+  | grep -i "version:"
+done
+```
+### 3. Verify Sticky Sessions
 Ensure cookies still pin users to versions.
 ```bash
 # Should be V1
@@ -503,15 +520,25 @@ curl -I --cookie "sms-user=stable" http://sms.test.local/sms
 # Should be V2
 curl -I --cookie "sms-user=canary" http://sms.test.local/sms
 ```
+### 4. Test Sticky Sessions
+```bash
+# Should see v2 headers in 10 of the requests.
+for i in {1..10}; do
+  echo "Canary request $i:"
+  curl -s -i \
+    -H "Cookie: sms-user=canary" \
+    http://sms.test.local/sms | grep -i version
+done
+```
 
-### 3. Run the Experiment 
+### 5. Run the Experiment 
 Generate the traffic for your Grafana graphs.
 ```bash
 chmod +x run-experiment.sh
 ./run-experiment.sh
 ```
 
-### 4. Verification
+### 6. Verification
 Go to [http://localhost:3000](http://localhost:3000).
 * **Graph:** User Engagement (Request Rate).
 * **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.

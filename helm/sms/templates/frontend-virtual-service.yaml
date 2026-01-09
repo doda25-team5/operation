@@ -99,6 +99,8 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=stable; Path=/"
+              set:
+                version: "v1"
         - destination:
             host: sms-frontend-svc
             subset: canary
@@ -107,6 +109,8 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=canary; Path=/"
+              set:
+                version: "v2"
 
     {{ else }}
     # [Mode: Standard] Default Safety

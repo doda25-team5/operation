@@ -36,17 +36,17 @@
     },
     {
       "type": "timeseries",
-      "title": "Total Requests (Absolute)",
+      "title": "Total Requests (Cumulative per Pod)",
       "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
       "targets": [
         {
-          "expr": "increase(sms_requests_total[$interval])",
+          "expr": "sms_requests_total",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ]
     },
-    {
+      {
       "type": "timeseries",
       "title": "Spam vs Ham Rate per Frontend Pod",
       "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
