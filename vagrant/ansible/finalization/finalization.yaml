@@ -47,14 +47,15 @@
         ansible_python_interpreter: /home/vagrant/.ansible-venv/bin/python
 
 
-# Finalization: MetalLB + Ingress-NGINX + Dashboard
-- name: Finalization - MetalLB + Ingress-NGINX + Dashboard
+# Finalization: MetalLB + Ingress-NGINX + Dashboard + Istio
+- name: Finalization - MetalLB + Ingress-NGINX + Dashboard + Istio
   hosts: all
   become: true
   gather_facts: false
 
   vars:
     kubeconfig_path: /home/vagrant/.kube/config
+    istio_version: "1.25.2"
 
   tasks:
       
@@ -210,3 +211,129 @@
         kubeconfig: "{{ kubeconfig_path }}"
         src: /home/vagrant/dashboard-ingress.yaml
 
+
+    # STEP 23 -> Install Istio
+
+    - name: Check if Istio folder exists
+      ansible.builtin.stat:
+        path: "/opt/istio-{{ istio_version }}/bin/istioctl"
+      register: istio_binary
+
+    - name: Detect system architecture
+      ansible.builtin.command: uname -m
+      register: system_arch
+      changed_when: false
+
+    - name: Set Istio architecture
+      ansible.builtin.set_fact:
+        istio_arch: "{{ 'arm64' if system_arch.stdout in ['aarch64', 'arm64'] else 'amd64' }}"
+
+    - name: Download Istio {{ istio_version }}
+      ansible.builtin.get_url:
+        url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux-{{ istio_arch }}.tar.gz"
+        dest: /tmp/istio.tar.gz
+        mode: '0644'
+      when: not istio_binary.stat.exists
+
+    - name: Extract Istio
+      ansible.builtin.unarchive:
+        src: /tmp/istio.tar.gz
+        dest: /opt
+        remote_src: yes
+      when: not istio_binary.stat.exists
+
+    - name: Ensure Istio directory is accessible
+      ansible.builtin.file:
+        path: "/opt/istio-{{ istio_version }}"
+        mode: '0755'
+        recurse: yes
+
+    - name: Ensure Istio bin directory is accessible
+      ansible.builtin.file:
+        path: "/opt/istio-{{ istio_version }}/bin"
+        mode: '0755'
+
+    - name: Ensure istioctl binary is executable
+      ansible.builtin.file:
+        path: "/opt/istio-{{ istio_version }}/bin/istioctl"
+        mode: '0755'
+
+    - name: Add istioctl to PATH for vagrant user
+      become_user: vagrant
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.bashrc
+        line: "export PATH=$PATH:/opt/istio-{{ istio_version }}/bin"
+        create: yes
+
+    - name: Symlink istioctl to /usr/local/bin
+      ansible.builtin.file:
+        src: "/opt/istio-{{ istio_version }}/bin/istioctl"
+        dest: /usr/local/bin/istioctl
+        state: link
+        force: yes
+
+    - name: Create Istio configuration with fixed LoadBalancer IP
+      ansible.builtin.copy:
+        content: |
+          apiVersion: install.istio.io/v1alpha1
+          kind: IstioOperator
+          spec:
+            profile: default
+            components:
+              ingressGateways:
+              - name: istio-ingressgateway
+                enabled: true
+                k8s:
+                  service:
+                    type: LoadBalancer
+                    loadBalancerIP: 192.168.56.91
+                  resources:
+                    requests:
+                      cpu: 50m
+                      memory: 128Mi
+                    limits:
+                      cpu: 500m
+                      memory: 512Mi
+            values:
+              pilot:
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 128Mi
+        dest: /home/vagrant/istio-config.yaml
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+
+    - name: Check if Istio is already installed
+      ansible.builtin.shell: kubectl --kubeconfig {{ kubeconfig_path }} get deployment istiod -n istio-system 2>/dev/null || echo "not_installed"
+      register: istio_check
+      changed_when: false
+
+    - name: Install Istio with custom configuration
+      become_user: vagrant
+      ansible.builtin.command: /usr/local/bin/istioctl install -y -f /home/vagrant/istio-config.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      when: istio_check.stdout == "not_installed"
+      register: istio_install
+      async: 600
+      poll: 10
+
+    - name: Wait for Istio control plane (istiod) to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n istio-system -l app=istiod --for=condition=ready pod --timeout=300s
+      register: _wait_istiod
+      until: _wait_istiod.rc == 0
+      retries: 10
+      delay: 15
+      when: istio_check.stdout == "not_installed"
+
+    - name: Wait for Istio ingressgateway to be ready
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} wait -n istio-system -l app=istio-ingressgateway --for=condition=ready pod --timeout=300s
+      register: _wait_istio_gateway
+      until: _wait_istio_gateway.rc == 0
+      retries: 10
+      delay: 15
+      when: istio_check.stdout == "not_installed"
