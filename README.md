@@ -171,7 +171,7 @@ If the nodes are not running reload the VMs, this will restart the VMs and reatt
 vagrant reload
 ```
 
-### Host to VM 
+#### Host to VM 
 
 In your Host terminal, ping the VMs using their IP addresses.
 ```bash
