@@ -171,7 +171,7 @@ If the nodes are not running reload the VMs, this will restart the VMs and reatt
 vagrant reload
 ```
 
-### Host to VM 
+#### Host to VM 
 
 In your Host terminal, ping the VMs using their IP addresses.
 ```bash
@@ -728,6 +728,16 @@ done
 ```
 
 ### 3. Test Sticky Sessions
+```bash
+# Should see v2 headers in 10 of the requests.
+for i in {1..10}; do
+  echo "Canary request $i:"
+  curl -s -i \
+    -H "Cookie: sms-user=canary" \
+    http://sms.test.local/sms | grep -i version
+done
+```
+### 4. Test Sticky Sessions
 ```bash
 # Should see v2 headers in 10 of the requests.
 for i in {1..10}; do

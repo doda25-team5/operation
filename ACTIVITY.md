@@ -103,18 +103,23 @@ Worked on the A2 assignment this week, specifically setting up the step 23 for t
 
 ## WEEK 7 - All Assignments
 
-#### Erkin: 
+#### Erkin:  https://github.com/doda25-team5/operation/pull/22
+This week I confirmed what is working on a4 and what is not working there. I added some scripts in the readme to check if the implemented features are correct or not. In the dashboards some labels were contradicting the behaviour of the metrics; therefore i updated the metrics. Finally for alerts the mail time was taking to much; therefore i made it faster using a better parallelized script and i changed the rule for early triggering that is testable.
 
 #### Jayran: https://github.com/doda25-team5/operation/pull/23
 Worked on A4 for a bit. Started writing up the deployment documentation. Still have lots to write. 
 
-#### Nicolas: 
+#### Nicolas: https://github.com/doda25-team5/operation/pull/25
+Worked on A4, specifically drafted the extension proposal section
 
 #### Priyansh: 
 
-#### Vedant:
+#### Vedant: https://github.com/doda25-team5/operation/pull/26, https://github.com/doda25-team5/operation/pull/21
+Worked on assignment 2, specifically creating the jinja file and also working on step 23. The aim was to get assignment 2 closer to excellent criteria.
 
-#### Maja: 
+#### Maja: https://github.com/doda25-team5/operation/pull/27 https://github.com/doda25-team5/operation/pull/24 https://github.com/doda25-team5/model-service/pull/10
+Worked on improving the A2 Readme for the final presentation. For A4 I improved the existing backend image for model versioning in model-service. Then in operation respository tried to display the metrics and their versions (v1-stable, v2-canary) by adding the prometheus metrics and using a new Grafana dashboard. These parts still needs testing.
+
 
 
 

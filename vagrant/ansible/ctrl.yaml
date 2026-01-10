@@ -6,6 +6,9 @@
     api_server_ip: "192.168.56.100"
     pod_network_cidr: "10.244.0.0/16"
     admin_conf_path: "/etc/kubernetes/admin.conf"
+    kube_user: "vagrant"
+    ansible_user_home: "/home/vagrant"
+    istio_version: "1.25.2"
 
   tasks:
 
@@ -176,3 +179,6 @@
         content: "{{ kubeadm_join_cmd.stdout }}"
         mode: '0755'
       when: adminconf_after.stat.exists   # ensures init finished
+
+
+    

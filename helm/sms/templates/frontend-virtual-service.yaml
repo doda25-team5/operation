@@ -77,6 +77,8 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=stable; Path=/"
+              set:
+                version: "v1"
         - destination:
             host: {{ .Values.frontend.service.name }}
             subset: canary
