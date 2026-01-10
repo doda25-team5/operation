@@ -109,141 +109,198 @@ http://localhost:8080/lib-version
 
 ## A2: Provisioning a Kubernetes Cluster
 
-From the operation repo, go into the vagrant directory in order to follow through with the rest of this section.
+This section uses virtual machines through Vagrant. 
 
+### Prerequisites
+The following tools must be installed on the host system:
+- **Vagrant**, for defining and managing virtual machines
+- **VirtualBox**, for virtualization 
+- **Ansible** – for automated provisioning 
+
+Verify these are installed by running:
+```bash
+ansible --version
+vagrant --version
+VBoxManage --version
+```
+
+### Enter the Vagrant Directory
+Enter the directory containing the Vagrantfile and Ansible playbooks for each node (ctrl, node-1, etc). The finalization/ folder  holds all the files that pertains to the 'Finalizing the Cluster Setup' (Steps 20-23). 
 ```bash
 cd vagrant
 ```
 
-In this directory, we have the ansible/ folder which holds the different playbooks for each nodes (ctrl, node-1, etc). We also have a finalization/ folder which holds all the files that pertains to the 'Finalizing the Cluster Setup'. 
+### Running the VMs
+Ensure there are no previously running virtual machines.
+```bash
+vagrant status
+```
 
-First run `vagrant up` to start up the cluster and run all the playbooks.
+If any VMs are running, destroy them.
+```bash
+vagrant destroy -f
+```
 
-### Network Communication
+To create and start all virtual machines. This will take around 5-10 minutes.
+```bash
+vagrant up
+```
+
+### Network Communication Testing
 
 #### VM to VM
 
+Enter the controler node using the SSH.
 ```bash
-vagrant ssh ctrl # go into the ctrl node
+# Enter the ctrl node
+vagrant ssh ctrl 
 
+# Ping the nodes
 ping -c 3 node-1
 ping -c 3 node-2
 
+# Exit the ctrl node
 exit
 ```
-
-### Host to VMv
+If ping fails, check VM network settings and ensure all VMs are running.
 ```bash
-ping -c 3 ctrl
-ping -c 3 node-1
-ping -c 3 node-2
+vagrant status
 ```
-### Host-Based Kubernetes Access
+If the nodes are not running reload the VMs, this will restart the VMs and reattach the host-only network.
+```bash
+vagrant reload
+```
+
+### Host to VM 
+
+In your Host terminal, ping the VMs using their IP addresses.
+```bash
+# Control node
+ping -c 3 192.168.56.100
+
+# Worker node 1
+ping -c 3 192.168.56.101
+
+# Worker node 2
+ping -c 3 192.168.56.102
+```
+
+Once connectivity is confirmed, SSH into the control node using the IP address.
+```bash
+ssh vagrant@192.168.56.100
+# Password: vagrant
+```
+If the pings fail, ensure that all virtual machines are running as before and try reseting them.
+```bash
+vagrant reload
+```
+
+### Kubernetes Cluster
 
 During provisioning, the controller’s kubeconfig (admin.conf) is copied to the shared /vagrant folder so it is accessible from the host machine.
 
 #### Verify kubeconfig exists
-
+From the previous VS terminal (in the vagrant folder) check the kubeconfig.
 ```bash
 ls -l admin.conf
 ```
-#### Use kubectl from your host system
+#### Test kubectl (Steps 13-17)
 
+Test kubectl for successfull Kubernetes working. 
 ```bash
-kubectl --kubeconfig=./admin.conf get nodes
+vagrant ssh ctrl
+
+# Check node status
+kubectl get nodes
+
+# Check system pods 
+kubectl get pods -n kube-system
+
+# Check flannel 
+kubectl get pods -n kube-flannel
+
+# Check all namespaces 
+kubectl get pods --all-namespaces
+
+# Verify helm version
+helm version
+
+# Verify helm plugin
+helm plugin list
+
+#Exit
+exit
 ```
 
-This confirms:
-- The control plane is running
-- Workers joined successfully
-- The host can manage the cluster
+### Kubernetes Dashboard
 
-
-### Accessing the Kubernetes Dashboard
-
-The dashboard is deployed via Helm and exposed through an Ingress. We assign it a stable MetalLB external IP and access it through a hostname. FIrst we must apply the finalization playbook. 
+The dashboard is deployed via Helm and exposed through an Ingress. We assign it a stable MetalLB external IP and access it through a hostname. 
 
 #### Apply the finalization playbook (Inginx, MetalLB, Dashboard, etc.)
 
-From your host terminal (make sure you're in the vagrant directory), execute:
+In your Host terminal navigate to the vagrant directory.
+```bash
+cd /path/to/your/vagrant/folder
+```
 
+Run the finalization playbook (Steps 20-23).
 ```bash
 ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
 ```
 
-If you encounter an SSH error at task 'Ensure vagrant user has passwordless sudo' then do the following:
-
-From your host machine do:
-
+If you encounter an SSH error at task 'Ensure vagrant user has passwordless sudo' copy the SSH id.
 ```bash
 ssh-copy-id vagrant@192.168.56.100
-#It will prompt you to enter a password. The password is vagrant.
-```
-
-This will enable you to not have to enter a password when SSH'ing into ctrl. 
-
-To ensure it's good, attempt the following command and make sure it doesn't prompt you to enter a password.
-
-```bash
-ssh vagrant@192.168.56.100
-```
-
-Once this is good, you can go back and execute
-```bash
-ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
+#Password: vagrant
 ```
 
 #### Add hostname entry (on the host machine)
 
-In your host terminal, execute the command:
-
+On your host machine, open the /etc/hosts file with a text editor.
 ```bash
 nano /etc/hosts
 ```
 
-and paste the following:
-
+Add the following line at the end of the file (replace the IP if your MetalLB IP differs).
 ```bash
 192.168.56.90  dashboard.local
 ```
+Save and close the file.
 
-#### Access the dashboard via your browser
+#### Access the Kubernetes dashboard
 
-Pase this url in your broswer to access the dashboard
+Open your web browser and navigate to the local doashboard. 
 
 ```bash
 https://dashboard.local
 ```
+If you do not see the logic page, try opening the link in the Incognito tab.
 
-#### Generate an admin token for login:
+#### Generate the login admin token:
 
-First SSH into the ctrl node using:
-
+Generate the login token by SSH into the ctrl node and generate an admin-user token and paste it into the login page.
 ```bash
 vagrant ssh ctrl
-```
-Once you've done that, execute the following command to generate a token:
 
-```bash
+# Check the namespaces
+kubectl get namespaces
+
+# Create the admin-user token
 kubectl -n kubernetes-dashboard create token admin-user
 ```
 
-A token should be generated. Copy this and paste it into the dashboard token promp you should be able to login!
-
 ### Ingress-NGINX Controller For Dashboard
 
-The Ingress controller receives the MetalLB external IP:
-
+The Ingress controller receives the MetalLB external IP.
 ```bash
 192.168.56.90
 ```
 #### To verify the service (from host)
 
+Ensure the service running with type 'LoadBalancer' and External-IP '192.168.56.90'.
 ```bash
 kubectl --kubeconfig=./admin.conf -n ingress-nginx get svc ingress-nginx-controller
 ```
-
-You should see the service running with type 'LoadBalancer' and External-IP '192.168.56.90'
 
 ### MetalLB Load Balancer Configuration
 
@@ -255,22 +312,20 @@ Pool:
 addresses:
   - 192.168.56.90-192.168.56.99
 ```
+This range should match your host-only network and not conflict with other devices.
 
-#### Verify MetalLB components
-
+#### 3. Verify MetalLB Components
+Check that the MetalLB controller and speaker pods are running:
 ```bash
 kubectl --kubeconfig=./admin.conf get pods -n metallb-system
 ```
+You should see pods with names like `controller` and `speaker` in the `Running` state.
 
-You should see a controller and speaker running
-
-#### Verify IP Allocation
-
+#### 4. Verify LoadBalancer IP Allocation
+When you create a service of type LoadBalancer, MetalLB will assign it an external IP from your pool. To check:
 ```bash
 kubectl --kubeconfig=./admin.conf get svc
 ```
-
-A service of type LoadBalancer should get an IP within your pool
 
 ### Verification Commands
 
@@ -282,6 +337,28 @@ kubectl --kubeconfig=./admin.conf get ingress -A
 kubectl --kubeconfig=./admin.conf get daemonset -A
 kubectl --kubeconfig=./admin.conf get deployments -A
 ```
+
+### Test Istio configuration (Step 23)
+
+Running the finalization playbook verify if Istio was correctly configured. 
+```bash
+# Ensure to SSH into the ctrl node
+vagrant ssh ctrl
+
+# Check istio version
+istioctl version
+
+# Ensure istio-system is Active
+kubectl --kubeconfig /home/vagrant/.kube/config get ns
+
+# Ensure all istio pods are running
+kubectl get pods -n istio-system
+
+# Verify istio ingress gateway
+kubectl get svc -n istio-system istio-ingressgateway
+```
+
+
 ## A3 (and some of A4): Operate and Monitor Kubernetes
 
 ### 1. Environment Setup
