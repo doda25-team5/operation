@@ -101,6 +101,10 @@ Updated the frontend for our application (new feature). Need to set up specific 
 #### Maja: https://github.com/doda25-team5/operation/pull/19/
 Worked on the A2 assignment this week, specifically setting up the step 23 for the final submission. The branch can be merged with the main with no conflicts but it needs further testing for veryfing if the everything works correctly. 
 
+## Christmas Break
+#### Priyansh: https://github.com/doda25-team5/operation/pull/20
+Continued where Erkin left off, and managed to implement sticky sessions using Cookies to do so. Attempted rudimentary rate limiting and shadow launching, but will be picking one of the 2 to finally finalize on.
+
 ## WEEK 7 - All Assignments
 
 #### Erkin:  https://github.com/doda25-team5/operation/pull/22
@@ -112,7 +116,8 @@ Worked on A4 for a bit. Started writing up the deployment documentation. Still h
 #### Nicolas: https://github.com/doda25-team5/operation/pull/25
 Worked on A4, specifically drafted the extension proposal section
 
-#### Priyansh: 
+#### Priyansh: https://github.com/doda25-team5/operation/pull/28
+Worked on making values.yaml the single source of truth, finalized on Shadow Launching instead of rate limiting and modified how Shadow Launching works as compared to last week [Now we have a dedicated version (v3) of the model service that will receive copies of requests from both v1 and v2]
 
 #### Vedant: https://github.com/doda25-team5/operation/pull/26, https://github.com/doda25-team5/operation/pull/21
 Worked on assignment 2, specifically creating the jinja file and also working on step 23. The aim was to get assignment 2 closer to excellent criteria.
