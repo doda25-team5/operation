@@ -111,11 +111,11 @@ http://localhost:8080/lib-version
 
 This section uses virtual machines through Vagrant. 
 
-### Prerequisites
+### Requirements
 The following tools must be installed on the host system:
 - **Vagrant**, for defining and managing virtual machines
 - **VirtualBox**, for virtualization 
-- **Ansible** – for automated provisioning 
+- **Ansible**, for automated provisioning 
 
 Verify these are installed by running:
 ```bash
