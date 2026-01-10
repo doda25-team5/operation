@@ -87,6 +87,9 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=canary; Path=/"
+              set:
+                version: "v2"
+
     {{- else }}
     # -------------------------------
     # Standard mode (100% stable)
