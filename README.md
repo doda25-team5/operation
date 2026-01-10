@@ -109,141 +109,198 @@ http://localhost:8080/lib-version
 
 ## A2: Provisioning a Kubernetes Cluster
 
-From the operation repo, go into the vagrant directory in order to follow through with the rest of this section.
+This section uses virtual machines through Vagrant. 
 
+### Prerequisites
+The following tools must be installed on the host system:
+- **Vagrant**, for defining and managing virtual machines
+- **VirtualBox**, for virtualization 
+- **Ansible** – for automated provisioning 
+
+Verify these are installed by running:
+```bash
+ansible --version
+vagrant --version
+VBoxManage --version
+```
+
+### Enter the Vagrant Directory
+Enter the directory containing the Vagrantfile and Ansible playbooks for each node (ctrl, node-1, etc). The finalization/ folder  holds all the files that pertains to the 'Finalizing the Cluster Setup' (Steps 20-23). 
 ```bash
 cd vagrant
 ```
 
-In this directory, we have the ansible/ folder which holds the different playbooks for each nodes (ctrl, node-1, etc). We also have a finalization/ folder which holds all the files that pertains to the 'Finalizing the Cluster Setup'. 
+### Running the VMs
+Ensure there are no previously running virtual machines.
+```bash
+vagrant status
+```
 
-First run `vagrant up` to start up the cluster and run all the playbooks.
+If any VMs are running, destroy them.
+```bash
+vagrant destroy -f
+```
 
-### Network Communication
+To create and start all virtual machines. This will take around 5-10 minutes.
+```bash
+vagrant up
+```
+
+### Network Communication Testing
 
 #### VM to VM
 
+Enter the controler node using the SSH.
 ```bash
-vagrant ssh ctrl # go into the ctrl node
+# Enter the ctrl node
+vagrant ssh ctrl 
 
+# Ping the nodes
 ping -c 3 node-1
 ping -c 3 node-2
 
+# Exit the ctrl node
 exit
 ```
-
-### Host to VMv
+If ping fails, check VM network settings and ensure all VMs are running.
 ```bash
-ping -c 3 ctrl
-ping -c 3 node-1
-ping -c 3 node-2
+vagrant status
 ```
-### Host-Based Kubernetes Access
+If the nodes are not running reload the VMs, this will restart the VMs and reattach the host-only network.
+```bash
+vagrant reload
+```
+
+### Host to VM 
+
+In your Host terminal, ping the VMs using their IP addresses.
+```bash
+# Control node
+ping -c 3 192.168.56.100
+
+# Worker node 1
+ping -c 3 192.168.56.101
+
+# Worker node 2
+ping -c 3 192.168.56.102
+```
+
+Once connectivity is confirmed, SSH into the control node using the IP address.
+```bash
+ssh vagrant@192.168.56.100
+# Password: vagrant
+```
+If the pings fail, ensure that all virtual machines are running as before and try reseting them.
+```bash
+vagrant reload
+```
+
+### Kubernetes Cluster
 
 During provisioning, the controller’s kubeconfig (admin.conf) is copied to the shared /vagrant folder so it is accessible from the host machine.
 
 #### Verify kubeconfig exists
-
+From the previous VS terminal (in the vagrant folder) check the kubeconfig.
 ```bash
 ls -l admin.conf
 ```
-#### Use kubectl from your host system
+#### Test kubectl (Steps 13-17)
 
+Test kubectl for successfull Kubernetes working. 
 ```bash
-kubectl --kubeconfig=./admin.conf get nodes
+vagrant ssh ctrl
+
+# Check node status
+kubectl get nodes
+
+# Check system pods 
+kubectl get pods -n kube-system
+
+# Check flannel 
+kubectl get pods -n kube-flannel
+
+# Check all namespaces 
+kubectl get pods --all-namespaces
+
+# Verify helm version
+helm version
+
+# Verify helm plugin
+helm plugin list
+
+#Exit
+exit
 ```
 
-This confirms:
-- The control plane is running
-- Workers joined successfully
-- The host can manage the cluster
+### Kubernetes Dashboard
 
-
-### Accessing the Kubernetes Dashboard
-
-The dashboard is deployed via Helm and exposed through an Ingress. We assign it a stable MetalLB external IP and access it through a hostname. FIrst we must apply the finalization playbook. 
+The dashboard is deployed via Helm and exposed through an Ingress. We assign it a stable MetalLB external IP and access it through a hostname. 
 
 #### Apply the finalization playbook (Inginx, MetalLB, Dashboard, etc.)
 
-From your host terminal (make sure you're in the vagrant directory), execute:
+In your Host terminal navigate to the vagrant directory.
+```bash
+cd /path/to/your/vagrant/folder
+```
 
+Run the finalization playbook (Steps 20-23).
 ```bash
 ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
 ```
 
-If you encounter an SSH error at task 'Ensure vagrant user has passwordless sudo' then do the following:
-
-From your host machine do:
-
+If you encounter an SSH error at task 'Ensure vagrant user has passwordless sudo' copy the SSH id.
 ```bash
 ssh-copy-id vagrant@192.168.56.100
-#It will prompt you to enter a password. The password is vagrant.
-```
-
-This will enable you to not have to enter a password when SSH'ing into ctrl. 
-
-To ensure it's good, attempt the following command and make sure it doesn't prompt you to enter a password.
-
-```bash
-ssh vagrant@192.168.56.100
-```
-
-Once this is good, you can go back and execute
-```bash
-ansible-playbook -u vagrant -i 192.168.56.100, ansible/finalization/finalization.yaml
+#Password: vagrant
 ```
 
 #### Add hostname entry (on the host machine)
 
-In your host terminal, execute the command:
-
+On your host machine, open the /etc/hosts file with a text editor.
 ```bash
 nano /etc/hosts
 ```
 
-and paste the following:
-
+Add the following line at the end of the file (replace the IP if your MetalLB IP differs).
 ```bash
 192.168.56.90  dashboard.local
 ```
+Save and close the file.
 
-#### Access the dashboard via your browser
+#### Access the Kubernetes dashboard
 
-Pase this url in your broswer to access the dashboard
+Open your web browser and navigate to the local doashboard. 
 
 ```bash
 https://dashboard.local
 ```
+If you do not see the logic page, try opening the link in the Incognito tab.
 
-#### Generate an admin token for login:
+#### Generate the login admin token:
 
-First SSH into the ctrl node using:
-
+Generate the login token by SSH into the ctrl node and generate an admin-user token and paste it into the login page.
 ```bash
 vagrant ssh ctrl
-```
-Once you've done that, execute the following command to generate a token:
 
-```bash
+# Check the namespaces
+kubectl get namespaces
+
+# Create the admin-user token
 kubectl -n kubernetes-dashboard create token admin-user
 ```
 
-A token should be generated. Copy this and paste it into the dashboard token promp you should be able to login!
-
 ### Ingress-NGINX Controller For Dashboard
 
-The Ingress controller receives the MetalLB external IP:
-
+The Ingress controller receives the MetalLB external IP.
 ```bash
 192.168.56.90
 ```
 #### To verify the service (from host)
 
+Ensure the service running with type 'LoadBalancer' and External-IP '192.168.56.90'.
 ```bash
 kubectl --kubeconfig=./admin.conf -n ingress-nginx get svc ingress-nginx-controller
 ```
-
-You should see the service running with type 'LoadBalancer' and External-IP '192.168.56.90'
 
 ### MetalLB Load Balancer Configuration
 
@@ -255,22 +312,20 @@ Pool:
 addresses:
   - 192.168.56.90-192.168.56.99
 ```
+This range should match your host-only network and not conflict with other devices.
 
-#### Verify MetalLB components
-
+#### 3. Verify MetalLB Components
+Check that the MetalLB controller and speaker pods are running:
 ```bash
 kubectl --kubeconfig=./admin.conf get pods -n metallb-system
 ```
+You should see pods with names like `controller` and `speaker` in the `Running` state.
 
-You should see a controller and speaker running
-
-#### Verify IP Allocation
-
+#### 4. Verify LoadBalancer IP Allocation
+When you create a service of type LoadBalancer, MetalLB will assign it an external IP from your pool. To check:
 ```bash
 kubectl --kubeconfig=./admin.conf get svc
 ```
-
-A service of type LoadBalancer should get an IP within your pool
 
 ### Verification Commands
 
@@ -282,7 +337,41 @@ kubectl --kubeconfig=./admin.conf get ingress -A
 kubectl --kubeconfig=./admin.conf get daemonset -A
 kubectl --kubeconfig=./admin.conf get deployments -A
 ```
+
+### Test Istio configuration (Step 23)
+
+Running the finalization playbook verify if Istio was correctly configured. 
+```bash
+# Ensure to SSH into the ctrl node
+vagrant ssh ctrl
+
+# Check istio version
+istioctl version
+
+# Ensure istio-system is Active
+kubectl --kubeconfig /home/vagrant/.kube/config get ns
+
+# Ensure all istio pods are running
+kubectl get pods -n istio-system
+
+# Verify istio ingress gateway
+kubectl get svc -n istio-system istio-ingressgateway
+```
+
+
 ## A3 (and some of A4): Operate and Monitor Kubernetes
+
+### Scope & Assumptions
+
+This section assumes:
+- **Minikube** is running with MetalLB and Ingress enabled
+- **Istio** is installed and operational
+- **kube-prometheus-stack** is installed in the monitoring namespace
+- Infrastructure provisioning (A2) is complete
+
+The application is deployed via a **single Helm chart** that controls all behavior through `values.yaml`.
+
+---
 
 ### 1. Environment Setup
 
@@ -293,6 +382,8 @@ export STACK_NAME="sms-monitor"
 export APP_NS="sms"
 export MON_NS="monitoring"
 ```
+These variables ensure ServiceMonitors, PrometheusRules, and AlertmanagerConfig resources correctly reference the monitoring stack.
+
 
 ### 2. Infrastructure Setup (Minikube & Istio)
 
@@ -307,6 +398,7 @@ minikube addons enable ingress
 # 2. Install Istio (Required for the App's Gateway)
 istioctl install --set profile=default -y
 ```
+---
 
 ### 3. Install Monitoring Stack
 
@@ -322,6 +414,8 @@ helm install $STACK_NAME prometheus-community/kube-prometheus-stack \
   --wait
 ```
 
+---
+
 ### 4. Secrets & Configuration
 
 **A. Create Gmail Secret (For Alerts)**
@@ -333,6 +427,7 @@ kubectl create secret generic sms-secrets \
   -n $MON_NS
 ```
 
+**Why pre-deployed?** Satisfies the "no credentials in deployment files" security requirement. The application references this secret but does not create it.
 
 
 **B. Configure values.yaml**
@@ -346,7 +441,7 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "your.email@gmail.com"
+      to: "your.email@gmail.com"        # Required for SMTP auth
       from: "your.email@gmail.com"      # Required for SMTP auth
       username: "your.email@gmail.com"  # Required for SMTP auth
 ```
@@ -366,8 +461,123 @@ helm upgrade --install sms ./helm/sms \
   --create-namespace \
   --wait
 ```
+**This single command deploys:**
+- Frontend (stable v1 + canary v2 deployments)
+- Backend (stable v1 + canary v2 + shadow v3 deployments)
+- ConfigMaps for application configuration
+- Istio resources (Gateway, VirtualServices, DestinationRules)
+- Monitoring resources (ServiceMonitors, PrometheusRules, AlertmanagerConfig)
+- Grafana dashboards (auto-imported)
 
-### 6. Verification I: Alerts (A3)
+---
+
+### 6. Configuration via values.yaml
+
+All application behavior is controlled through `helm/sms/values.yaml`. Modify these values and redeploy using `helm upgrade`.
+
+#### 6.1 Traffic Modes
+
+```yaml
+traffic:
+  mode: canary  # Options: standard | canary
+```
+
+**Traffic mode behavior:**
+
+| Mode | Frontend Split | Backend Split | Shadow (v3) Behavior |
+|------|----------------|---------------|----------------------|
+| `standard` | 100% stable (v1) | 100% stable (v1) | Receives mirrored copy of all v1 traffic |
+| `canary` | 90% stable (v1), 10% canary (v2) | 90% stable (v1), 10% canary (v2) | Receives mirrored copy of all v1 + v2 traffic |
+
+**Key point:** Shadow (v3) is **always running** and receives mirrored traffic from both v1 and v2. Shadow responses are discarded (zero user impact).
+
+**To change modes:**
+```bash
+# Switch to canary mode
+helm upgrade --install sms ./helm/sms -n $APP_NS --set traffic.mode=canary
+
+# Switch back to standard
+helm upgrade --install sms ./helm/sms -n $APP_NS --set traffic.mode=standard
+```
+
+#### 6.2 Scaling Replicas
+
+```yaml
+frontend:
+  replicas: 1          # Stable frontend replicas
+  canaryReplicas: 1    # Canary frontend replicas
+
+backend:
+  replicas: 1          # Stable backend replicas
+  canaryReplicas: 1    # Canary backend replicas
+  shadow:
+    replicas: 1        # Shadow backend replicas
+```
+
+**Understanding replicas:**
+- Each replica is an independent pod with its own counters
+- Metrics are per-pod, not globally shared
+- Prometheus aggregates metrics across all pods using `sum by (version)`
+- Increasing replicas improves throughput and fault tolerance
+
+**To scale:**
+```bash
+# Scale stable backend to 3 replicas
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set backend.replicas=3
+
+# Scale all components
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set frontend.replicas=2 \
+  --set backend.replicas=2 \
+  --set backend.canaryReplicas=2 \
+  --set backend.shadow.replicas=2
+```
+
+#### 6.3 Shadow Traffic
+
+Shadow (v3) is always enabled and receives mirrored traffic:
+
+```yaml
+backend:
+  shadow:
+    enabled: true
+    replicas: 1
+```
+
+**How shadow works:**
+- Shadow (v3) is a **separate deployment** that runs continuously
+- Istio mirrors **all traffic** (from both v1 and v2) to v3
+- Shadow processes requests but its responses are **discarded**
+- Users never see shadow responses (zero impact)
+- This enables safe testing of new models in production
+
+**Expected metrics:** `shadow_requests ≈ v1_requests + v2_requests`
+
+**To disable shadow:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set backend.shadow.enabled=false
+```
+
+#### 6.4 Enable/Disable Monitoring
+
+```yaml
+monitoring:
+  enabled: true
+```
+
+**To disable monitoring resources:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set monitoring.enabled=false
+```
+
+This removes ServiceMonitors, PrometheusRules, and AlertmanagerConfig from deployment.
+
+---
+
+### 7. Verification I: Alerts (A3)
 
 Now that the app is running, we can trigger the monitoring alerts.
 
@@ -379,9 +589,14 @@ kubectl get svc -n $MON_NS
 
 **2. Port Forwarding:**
 
-(Replace `SERVICE_NAME` below with the actual names found in step 1)
+Replace `YOUR_PROMETHEUS_SERVICE_NAME` and `YOUR_ALERTMANAGER_SERVICE_NAME` with the actual names from step 1 (e.g., `sms-monitor-kube-prometheu-prometheus`, `sms-monitor-kube-prometheu-alertmanager`).
 
-** Reminder to add your stack every time you open a new terminal for the commands below.**
+** Reminder to add your stack every time you open a new terminal for port forwarding using the commands below**
+```bash
+export STACK_NAME="sms-monitor"
+export APP_NS="sms"
+export MON_NS="monitoring"
+```
 
 ```bash
 # Forward Prometheus (e.g., sms-monitor-kube-prometheu-prometheus)
@@ -397,23 +612,26 @@ kubectl get secret --namespace $MON_NS $STACK_NAME-grafana -o jsonpath="{.data.a
 kubectl port-forward -n $MON_NS svc/$STACK_NAME-grafana 3000:80 
 ```
 
+
+**Access dashboards:**
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- Alertmanager: [http://localhost:9093](http://localhost:9093)
+- Grafana: [http://localhost:3000](http://localhost:3000) (username: `admin`, password from command above)
+
 **3. Trigger HighRequestRate Alert:**
-Before running the code below, please run the following:
+Before running the code below, start **minikube tunnel** in a separate terminal and keep it running:
 
 ```bash
 minikube tunnel
 ```
-
 Get the External IP of the Istio Ingress Gateway
 Wait until 'EXTERNAL-IP' is a real IP and not <pending>
 ```bash
 kubectl get svc -n istio-system istio-ingressgateway
 ```
 
-
 Add the entry to your hosts file
-Replace <IP> with the value from the command above
-Use the command below to open your host file in edit mode.
+Note the External IP from the command above and use the command below to open your host file in edit mode.
 
 ```bash
 sudo nano /etc/hosts
@@ -431,20 +649,24 @@ Add this line at the bottom of your `/etc/hosts`
 ```
 
 
-Send traffic to the Ingress to simulate load. [Please refer to the first section in A4 to add the hosts for curl]
+Send traffic to the Ingress to simulate load. 
 
 
 * **Linux/Mac:**
 ```bash
-for i in {1..200}; do 
+seq 1 200 | xargs -n1 -P10 -I{} bash -c '
+  echo "Sending request #{}"
   curl -s -X POST http://sms.test.local/sms \
     -H "Content-Type: application/json" \
-    -d '{"sms":"load test message","guess":"ham"}' > /dev/null; 
-  sleep 1; 
-done
+    -d "{\"sms\":\"load test message\",\"guess\":\"ham\"}"
+  echo ""
+'
 ```
 
-*Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the alert fire.*
+**Verification:**
+
+Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the `HighRequestRate` alert fire. You should also receive an email notification.
+
 
 ---
 
@@ -452,17 +674,13 @@ done
 
 ## Part 1: Shadow Launch 
 
-**Goal:** Deploy V2 (Canary) and mirror real traffic to it without users knowing.
+**Goal:** Use V3 (Shadow) and mirror real traffic to it without users knowing.
 
-### 1. Enable Shadow Mode
-We use the dynamic traffic switch to route 100% of users to Stable (V1) but mirror a copy to Canary (V2).
-
-```bash
-helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=shadow
-```
+### 1. Validation
+Ensure that `backend.shadow.enabled = true` in values.yaml 
 
 ### 2. Generate Traffic
-Run this loop to mimic user activity (POST requests).
+Run this loop to mimic user activity (POST requests). Immediately after running this loop, run step 3 on a new terminal to verify the mirroring.
 ```bash
 for i in {1..20}; do 
   echo -n "Request $i: "
@@ -474,13 +692,15 @@ done
 ```
 
 ### 3. Verification 
-Proof that V2 received the traffic by checking its logs. We filter specifically for the **backend container** to avoid Istio noise.
-Run the following in a new terminal:
-```bash
-# Follow the live traffic on the V2 backend (only shows new logs)
-kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
+Go to [http://localhost:9090](http://localhost:9090) (Prometheus).
+
+Run this query to verify Shadow (V3) received the mirrored traffic:
+
+```promql
+sum by (version) (rate(model_predictions_total[1m]))
 ```
-*Look for lines like: `"POST /predict HTTP/1.1" 200`*
+
+*You should see shadow traffic rate matching stable traffic rate.*
 
 ---
 
@@ -489,32 +709,164 @@ kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
 **Goal:** Release V2 to 10% of users and measure engagement.
 
 ### 1. Enable Canary Mode (90/10 Split)
+Please not that by default, this is already done from the get-go, so you may not have to run the code below.
 ```bash
 # Apply Canary Split
 helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=canary
 ```
 
-### 2. Verify Sticky Sessions
-Ensure cookies still pin users to versions.
+### 2. Test Canary Mode on Mac/Linux(90/10 Split)
 ```bash
-# Should be V1
-curl -I --cookie "sms-user=stable" http://sms.test.local/sms
-
-# Should be V2
-curl -I --cookie "sms-user=canary" http://sms.test.local/sms
+# Should see many v1 headers and very limited amount of v2 headers
+for i in {1..20}; do 
+  echo -n "Request $i: "
+  curl -s -i -X POST http://sms.test.local/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"canary split 90-10 test","guess":"ham"}' \
+  | grep -i "version:"
+done
 ```
 
-### 3. Run the Experiment 
+### 3. Test Sticky Sessions
+```bash
+# Should see v2 headers in 10 of the requests.
+for i in {1..10}; do
+  echo "Canary request $i:"
+  curl -s -i \
+    -H "Cookie: sms-user=canary" \
+    http://sms.test.local/sms | grep -i version
+done
+```
+
+### 5. Run the Experiment 
 Generate the traffic for your Grafana graphs.
 ```bash
 chmod +x run-experiment.sh
 ./run-experiment.sh
 ```
 
-### 4. Verification
+### 6. Verification
 Go to [http://localhost:3000](http://localhost:3000).
 * **Graph:** User Engagement (Request Rate).
 * **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.
 
+---
 
 
+### Troubleshooting
+
+#### Issue: Alert not firing
+
+**Check:**
+```bash
+# Verify ServiceMonitor is discovered
+kubectl get servicemonitor -n $MON_NS
+
+# Check Prometheus targets
+# Go to http://localhost:9090/targets and look for sms-backend
+```
+
+**Fix:** Ensure `monitoring.prometheusRelease` in `values.yaml` matches your Prometheus Helm release name (`$STACK_NAME`).
+
+#### Issue: No external IP for Ingress Gateway
+
+**Check:**
+```bash
+kubectl get svc -n istio-system istio-ingressgateway
+```
+
+**Fix:** Ensure `minikube tunnel` is running in a separate terminal.
+
+#### Issue: Requests failing with connection errors
+
+**Check hosts file:**
+```bash
+cat /etc/hosts | grep sms.test.local
+```
+
+**Verify Gateway:**
+```bash
+kubectl get gateway -n $APP_NS
+kubectl get virtualservice -n $APP_NS
+```
+
+#### Issue: Shadow traffic not appearing
+
+**Check shadow deployment:**
+```bash
+kubectl get pods -n $APP_NS -l version=shadow
+```
+
+**Verify shadow is enabled in values.yaml:**
+```yaml
+backend:
+  shadow:
+    enabled: true
+```
+
+**Redeploy if needed:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS
+```
+
+**Check Istio VirtualService for mirroring:**
+```bash
+kubectl get virtualservice -n $APP_NS -o yaml | grep -A 5 mirror
+```
+
+#### Issue: Shadow traffic doesn't equal v1 + v2
+
+This is expected behavior. Shadow receives **mirrored** traffic which means:
+- Shadow processes the same requests as v1 and v2
+- Metrics should show: `shadow_count ≈ v1_count + v2_count`
+- Small differences are normal due to timing and network conditions
+
+#### Issue: Port forwarding fails
+
+**Ensure environment variables are set:**
+```bash
+export STACK_NAME="sms-monitor"
+export MON_NS="monitoring"
+```
+
+**Verify service names match:**
+```bash
+kubectl get svc -n $MON_NS
+```
+
+---
+
+### Reset & Cleanup
+
+To completely reset the environment:
+
+#### Application-only reset (recommended)
+
+Use this when you want to redeploy the app, change traffic modes, replicas, or values.
+
+```bash
+# Delete application release
+helm uninstall sms -n $APP_NS
+
+# Delete application namespace
+kubectl delete namespace $APP_NS
+```
+
+#### Full Environment Reset
+
+```bash
+# Delete application
+helm uninstall sms -n $APP_NS
+
+# Delete monitoring stack
+helm uninstall $STACK_NAME -n $MON_NS
+
+# Delete namespaces
+kubectl delete namespace $APP_NS
+kubectl delete namespace $MON_NS
+
+# Delete Minikube cluster
+minikube delete
+```
+
+**To start fresh:** Return to Section 2 (Infrastructure Setup).

@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sms-frontend-canary
+  name: {{ .Values.frontend.name }}-canary
   labels:
-    app: sms-frontend
+    app: {{ .Values.frontend.name }}
     version: v2
 spec:
-  replicas: {{ .Values.replicaCountFrontend }}
+  replicas: {{ .Values.frontend.canaryReplicas }}
   selector:
     matchLabels:
-      app: sms-frontend
+      app: {{ .Values.frontend.name }}
       version: v2
   template:
     metadata:
       labels:
-        app: sms-frontend
+        app: {{ .Values.frontend.name }}
         version: v2
     spec:
       containers:
-      - name: frontend
-        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.canaryTag }}"
-        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.frontend.service.port }}
-          name: http
-        envFrom:
-          - configMapRef:
-              name: sms-frontend-config
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.canaryTag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.frontend.service.port }}
+            name: {{ .Values.frontend.service.portName }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.frontend.name }}-config

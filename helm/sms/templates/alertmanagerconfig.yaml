@@ -2,8 +2,8 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: sms-alerts
-  namespace: monitoring
+  name: alertmanager-config
+  namespace: {{ .Values.namespaces.monitoring }}
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
@@ -28,6 +28,6 @@ spec:
           requireTLS: true
           authUsername: {{ .Values.monitoring.alerts.email.username | quote }}
           authPassword:
-            name: sms-secrets
-            key: smtp_pass
+            name: {{ .Values.secrets.smtp.existingSecret }}
+            key: {{ .Values.secrets.smtp.passwordKey }}
 {{- end }}

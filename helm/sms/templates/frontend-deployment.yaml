@@ -1,32 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sms-frontend
+  name: {{ .Values.frontend.name }}
   labels:
-    app: sms-frontend
+    app: {{ .Values.frontend.name }}
     version: v1
 spec:
-  replicas: {{ .Values.replicaCountFrontend }}
+  replicas: {{ .Values.frontend.replicas }}
   selector:
     matchLabels:
-      app: sms-frontend
+      app: {{ .Values.frontend.name }}
       version: v1
   template:
     metadata:
       labels:
-        app: sms-frontend
+        app: {{ .Values.frontend.name }}
         version: v1
     spec:
-
-      # # OPTIONAL HOSTPATH VOLUME (EXCELLENT LEVEL)
-      # volumes:
-      #   {{- if .Values.hostPath.enabled }}
-      #   - name: shared-volume
-      #     hostPath:
-      #       path: {{ .Values.hostPath.path }}
-      #       type: Directory
-      #     {{- end }}
-
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.stableTag }}"
@@ -34,15 +24,9 @@ spec:
 
           ports:
             - containerPort: {{ .Values.frontend.service.port }}
-              name: http
+              name: {{ .Values.frontend.service.portName }}
 
           envFrom:
             - configMapRef:
-                name: sms-frontend-config
+                name: {{ .Values.frontend.name }}-config
 
-          # # CONDITIONAL MOUNT INTO FRONTEND CONTAINER
-          # {{- if .Values.hostPath.enabled }}
-          # volumeMounts:
-          #   - name: shared-volume
-          #     mountPath: {{ .Values.hostPath.mountPath }}
-          # {{- end }}

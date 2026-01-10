@@ -1,45 +1,101 @@
-replicaCountFrontend: 1
-replicaCountBackend: 1
+# --------------------------------------------------
+# Namespaces (created by Helm)
+# --------------------------------------------------
+namespaces:
+  monitoring: monitoring
 
+# --------------------------------------------------
+# Istio
+# --------------------------------------------------
+istio:
+  enabled: true
+  ingressGateway:
+    name: sms-gateway
+    selector: ingressgateway
+# --------------------------------------------------
+# Frontend
+# --------------------------------------------------
 frontend:
+  name: sms-frontend
+
+  replicas: 1
+  canaryReplicas: 1
+
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "2.1.1" #TODO: be updated to actual stable [for now it's an old version of 'stable']
-    canaryTag: "latest" #TODO: be updated to actual canary
+    stableTag: "2.1.1"
+    canaryTag: "latest"
     pullPolicy: IfNotPresent
-  service:
-    port: 8080
 
+  service:
+    name: sms-frontend-svc
+    port: 8080
+    portName: http
+    type: ClusterIP
+
+  config:
+    backendHost: sms-backend-svc
+    backendPort: 8081
+
+# --------------------------------------------------
+# Backend
+# --------------------------------------------------
 backend:
+  name: sms-backend
+
+  replicas: 1
+  canaryReplicas: 1
+
   image:
     repository: ghcr.io/doda25-team5/sms-backend
-    stableTag: "latest" #TODO: be updated to actual stable
-    canaryTag: "latest" #TODO: be updated to actual canary
+    stableTag: "latest"
+    canaryTag: "latest"
+    shadowTag: "latest"
     pullPolicy: IfNotPresent
-  service:
-    port: 8081
-  model:
-    dir: "/root/sms/output"
-    filename: "model.joblib"
-    preproc_filename: "preprocessor.joblib"
-    url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
-    preproc_url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
 
-initContainer:
-  enabled: false
-  enableHostPath: false
-  hostPath: /mnt/shared/model-data
+  service:
+    name: sms-backend-svc
+    port: 8081
+    type: ClusterIP
+    portName: metrics
+
+  model:
+    dir: "/mnt/shared/models"
+    filename: "model.joblib"
+    preprocessorFilename: "preprocessor.joblib"
+    url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
+    preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+
+  shadow:
+    enabled: true
+    replicas: 1
+
+  storage:
+    enabled: true
+    type: hostPath          # REQUIRED FOR EXCELLENT
+    hostPath: /mnt/shared
+    mountPath: /mnt/shared
+
+# --------------------------------------------------
+# Traffic Management (Istio)
+# --------------------------------------------------
+traffic:
+  mode: canary   # standard | canary
 
 ingress:
   enabled: false
-  host: sms.test.local           # Cookies logic + 90/10 splitting
-  stableHost: stable.local       # -- NEW: Forces traffic to Stable for grading
-  canaryHost: canary.local       # -- NEW: Forces traffic to Canary for grading
-  path: "/"
+  host:
+    primary: sms.test.local
+    stable: stable.local
+    canary: canary.local
 
+# --------------------------------------------------
+# Monitoring
+# --------------------------------------------------
 monitoring:
   enabled: true
-  prometheusRelease: "sms-monitor"
+  prometheusRelease: sms-monitor  #should match the release/stack name of prometheus installation
+
   alerts:
     email:
       enabled: true
@@ -47,20 +103,17 @@ monitoring:
       from: "priyansh.rajusth@gmail.com"
       username: "priyansh.rajusth@gmail.com"
 
+# --------------------------------------------------
+# Secrets
+# --------------------------------------------------
 secrets:
-  create: false
-  smtp_user: ""
-  smtp_pass: ""
+  smtp:
+    existingSecret: sms-secrets
+    passwordKey: smtp_pass
 
-ingressgateway:
-  ingressGatewayLabel: ingressgateway
 
-hostPath:
-  enabled: false
-  path: /mnt/shared
-  mountPath: /mnt/shared
-
-# Traffic Control Mode
-# Options: "standard" (100% stable), "shadow" (mirror to canary), "canary" (90/10 split)
-traffic:
-  mode: "standard"
+# --------------------------------------------------
+# Rate Limiting
+# --------------------------------------------------
+rateLimiting:
+  enabled: False

@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: sms-backend-rules
-  namespace: monitoring
+  namespace: {{ .Values.namespaces.monitoring }} 
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
@@ -15,7 +15,7 @@ spec:
       for: 2m
       labels:
         severity: warning
-        namespace: monitoring   # <--- REQUIRED TO MATCH CONFIG
+        namespace: {{ .Values.namespaces.monitoring }}
       annotations:
         summary: "High request rate on SMS frontend"
         description: "More than ~15 requests/min for 2 minutes"

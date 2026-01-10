@@ -2,18 +2,18 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: sms-frontend-sm
-  namespace: monitoring
+  name: {{ .Values.frontend.name }}-sm
+  namespace: {{ .Values.namespaces.monitoring }}
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   selector:
     matchLabels:
-      app: sms-frontend
+      app: {{ .Values.frontend.name }}
   namespaceSelector:
     any: true
   endpoints:
-    - port: http
+    - port: {{ .Values.frontend.service.portName }}
       path: /metrics
       interval: 30s
 {{- end }}

@@ -2,18 +2,23 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: sms-backend-sm
-  namespace: monitoring
+  name: {{ .Values.backend.name }}-sm
+  namespace: {{ .Values.namespaces.monitoring }}
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   selector:
     matchLabels:
-      app: sms-backend
+      app: {{ .Values.backend.name }}
   namespaceSelector:
     any: true
   endpoints:
-    - port: metrics
+    - port: {{ .Values.backend.service.portName }}
       path: /metrics
       interval: 30s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_container_name]
+          action: keep
+          regex: backend
+
 {{- end }}

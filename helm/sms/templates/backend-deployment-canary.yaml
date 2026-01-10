@@ -1,55 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sms-backend-canary
+  name: {{ .Values.backend.name }}-canary
   labels:
-    app: sms-backend
+    app: {{ .Values.backend.name }}
     version: v2
 spec:
-  replicas: {{ .Values.replicaCountBackend }}
+  replicas: {{ .Values.backend.canaryReplicas }}
   selector:
     matchLabels:
-      app: sms-backend
+      app: {{ .Values.backend.name }}
       version: v2
   template:
     metadata:
       labels:
-        app: sms-backend
+        app: {{ .Values.backend.name }}
         version: v2
     spec:
     
-      {{- if .Values.initContainer.enabled }}
       volumes:
         - name: model-data
-          {{- if .Values.initContainer.enableHostPath }}
           hostPath:
-            path: {{ .Values.initContainer.hostPath | quote }}
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
-
-      initContainers:
-        - name: model-downloader
-          image: curlimages/curl:7.88.1
-          command:
-            - sh
-            - -c
-            - >
-              mkdir -p {{ .Values.backend.model.dir }} &&
-              echo "Checking model..." &&
-              if [ ! -f {{ .Values.backend.model.dir }}/{{ .Values.backend.model.filename }} ]; then
-                echo "Downloading model...";
-                curl -fSL "{{ .Values.backend.model.url }}" -o {{ .Values.backend.model.dir }}/{{ .Values.backend.model.filename }};
-              fi &&
-              echo "Checking preprocessor..." &&
-              if [ ! -f {{ .Values.backend.model.dir }}/{{ .Values.backend.model.preproc_filename }} ]; then
-                echo "Downloading preprocessor...";
-                curl -fSL "{{ .Values.backend.model.preproc_url }}" -o {{ .Values.backend.model.dir }}/{{ .Values.backend.model.preproc_filename }};
-              fi
-          volumeMounts:
-            - name: model-data
-              mountPath: {{ .Values.backend.model.dir | quote }}
-      {{- end }}
+            path: {{ .Values.backend.storage.hostPath }}
+            type: DirectoryOrCreate
 
       # -----------------------------
       # MAIN CONTAINERS
@@ -61,20 +34,16 @@ spec:
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.backend.service.port }}   
-              name: metrics
+              name: {{ .Values.backend.service.portName }}
               
           envFrom:
             - configMapRef:
-                name: sms-backend-config
+                name: {{ .Values.backend.name }}-config
 
           env:
             - name: MODEL_VERSION
               value: "v2"
 
-          {{- if .Values.initContainer.enabled }}
           volumeMounts:
             - name: model-data
               mountPath: {{ .Values.backend.model.dir | quote }}
-          {{- end }}
-
-

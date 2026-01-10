@@ -1,14 +1,16 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: sms-gateway
+  name: {{ .Values.istio.ingressGateway.name }}
 spec:
   selector:
-    istio: {{ .Values.ingressgateway.ingressGatewayLabel }}
+    istio: {{ .Values.istio.ingressGateway.selector }}
   servers:
     - port:
         number: 80
         name: http
         protocol: HTTP
       hosts:
-        - "*"
+        - {{ .Values.ingress.host.primary | quote }}
+        - {{ .Values.ingress.host.stable | quote }}
+        - {{ .Values.ingress.host.canary | quote }}
