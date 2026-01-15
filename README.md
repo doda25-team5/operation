@@ -274,7 +274,7 @@ Open your web browser and navigate to the local doashboard.
 ```bash
 https://dashboard.local
 ```
-If you do not see the logic page, try opening the link in the Incognito tab.
+If you do not see the login page, try opening the link in the Incognito tab.
 
 #### Generate the login admin token:
 
@@ -399,6 +399,23 @@ minikube addons enable ingress
 istioctl install --set profile=default -y
 ```
 ---
+Note:
+The Istio Ingress Gateway is treated as cluster-level infrastructure and is not managed by the Helm chart.
+
+It is applied once after Istio is installed and before deploying the application: 
+
+While using Minikube to test:
+```bash
+kubectl apply -f istio/gateway.yaml
+```
+
+⚠️ Important: VirtualServices [in A4] must reference the Gateway using its full name (including the namespace), like
+`istio-system/sms-gateway`, not just `sms-gateway`.
+
+The Helm chart does not create the Gateway.
+Instead, it references an existing Gateway by name, which is configurable via values.yaml.
+
+---
 
 ### 3. Install Monitoring Stack
 
@@ -423,16 +440,18 @@ Replace `YOUR_16_CHAR_CODE` with your Google App Password (from [myaccount.googl
 
 ```bash
 kubectl create secret generic sms-secrets \
-  --from-literal=smtp_pass="YOUR_16_CHAR_CODE" \
+--from-literal=password="YOUR_16_CHAR_CODE_WITHOUT_SPACES" \
   -n $MON_NS
 ```
 
-**Why pre-deployed?** Satisfies the "no credentials in deployment files" security requirement. The application references this secret but does not create it.
+**Why pre-deployed?**
+Email alert credentials are not configured via values.yaml.
 
+The Helm chart expects a pre-existing Kubernetes Secret (sms-secrets) that contains SMTP field credentials.
+No email addresses or credentials are stored in the repository or in Helm values.
 
 **B. Configure values.yaml**
-Ensure `helm/sms/values.yaml` matches your monitoring stack and email settings. 
-**Important:** Update all three email fields to your own address.
+Ensure `helm/sms/values.yaml` matches your monitoring stack.
 
 ```yaml
 monitoring:
@@ -441,9 +460,6 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "your.email@gmail.com"        # Required for SMTP auth
-      from: "your.email@gmail.com"      # Required for SMTP auth
-      username: "your.email@gmail.com"  # Required for SMTP auth
 ```
 
 ### 5. Deploy SMS Application
@@ -465,15 +481,17 @@ helm upgrade --install sms ./helm/sms \
 - Frontend (stable v1 + canary v2 deployments)
 - Backend (stable v1 + canary v2 + shadow v3 deployments)
 - ConfigMaps for application configuration
-- Istio resources (Gateway, VirtualServices, DestinationRules)
+- Istio resources (VirtualServices, DestinationRules)
 - Monitoring resources (ServiceMonitors, PrometheusRules, AlertmanagerConfig)
 - Grafana dashboards (auto-imported)
+
+Note: The Istio Gateway is (supposed to be) provisioned separately as cluster infrastructure and is not managed by the Helm chart.
 
 ---
 
 ### 6. Configuration via values.yaml
-
-All application behavior is controlled through `helm/sms/values.yaml`. Modify these values and redeploy using `helm upgrade`.
+The name of the Istio Gateway used by the application is configurable via values.yaml.
+All application behavior is controlled through `helm/sms/values.yaml`. You can modify these values and redeploy using `helm upgrade`.
 
 #### 6.1 Traffic Modes
 
@@ -603,7 +621,6 @@ export MON_NS="monitoring"
 kubectl port-forward -n $MON_NS svc/YOUR_PROMETHEUS_SERVICE_NAME 9090:9090
 
 # Forward Alertmanager (e.g., sms-monitor-kube-prometheu-alertmanager)
-# Reminde
 kubectl port-forward -n $MON_NS svc/YOUR_ALERTMANAGER_SERVICE_NAME 9093:9093
 
 # Forward Grafana and Get Password
@@ -709,7 +726,7 @@ sum by (version) (rate(model_predictions_total[1m]))
 **Goal:** Release V2 to 10% of users and measure engagement.
 
 ### 1. Enable Canary Mode (90/10 Split)
-Please not that by default, this is already done from the get-go, so you may not have to run the code below.
+Please note that by default, this is already done from the get-go, so you may not have to run the code below.
 ```bash
 # Apply Canary Split
 helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=canary
@@ -737,33 +754,26 @@ for i in {1..10}; do
     http://sms.test.local/sms | grep -i version
 done
 ```
-### 4. Test Sticky Sessions
-```bash
-# Should see v2 headers in 10 of the requests.
-for i in {1..10}; do
-  echo "Canary request $i:"
-  curl -s -i \
-    -H "Cookie: sms-user=canary" \
-    http://sms.test.local/sms | grep -i version
-done
-```
 
-### 5. Run the Experiment 
+### 4. Run the Experiment 
 Generate the traffic for your Grafana graphs.
+Note: Ensure that the host name matches the one in values.yaml
 ```bash
 chmod +x run-experiment.sh
 ./run-experiment.sh
 ```
 
-### 6. Verification
+### 5. Verification
 Go to [http://localhost:3000](http://localhost:3000).
 * **Graph:** User Engagement (Request Rate).
 * **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.
 
+[Note: You may even validate the Shadow Launch through the `SMS Model Overview` dashboard in Grafana with the above experiment. The value `v3 / (v2 + v1)` in this dashboard should be equal to `1`. If the numbers don't match, see [Shadow Traffic Discrepancies](#issue-shadow-traffic-doesnt-equal-v1--v2).]
+
 ---
 
 
-### Troubleshooting
+### Discrepancies and Troubleshooting
 
 #### Issue: Alert not firing
 

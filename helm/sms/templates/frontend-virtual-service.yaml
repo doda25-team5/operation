@@ -8,7 +8,7 @@ spec:
     - {{ .Values.ingress.host.stable | quote }}
     - {{ .Values.ingress.host.canary | quote }}
   gateways:
-    - {{ .Values.istio.ingressGateway.name }}
+    - {{ .Values.istio.ingressGateway.namespace }}/{{ .Values.istio.ingressGateway.name }}
   http:
     # Grading shortcuts (host-based)
     - match:
@@ -87,6 +87,8 @@ spec:
             response:
               add:
                 Set-Cookie: "sms-user=canary; Path=/"
+              set:
+                version: "v2"
     {{- else }}
     # -------------------------------
     # Standard mode (100% stable)

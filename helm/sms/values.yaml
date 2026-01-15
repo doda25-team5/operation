@@ -1,5 +1,5 @@
 # --------------------------------------------------
-# Namespaces (created by Helm)
+# Namespaces
 # --------------------------------------------------
 namespaces:
   monitoring: monitoring
@@ -12,6 +12,7 @@ istio:
   ingressGateway:
     name: sms-gateway
     selector: ingressgateway
+    namespace: istio-system
 # --------------------------------------------------
 # Frontend
 # --------------------------------------------------
@@ -99,9 +100,9 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "erkinbasol@gmail.com"
-      from: "erkinbasol@gmail.com"
-      username: "erkinbasol@gmail.com"
+      to: "priyansh.rajusth@gmail.com"
+      from: "priyansh.rajusth@gmail.com"
+      username: "priyansh.rajusth@gmail.com"
 
 # --------------------------------------------------
 # Secrets
@@ -109,7 +110,8 @@ monitoring:
 secrets:
   smtp:
     existingSecret: sms-secrets
-    passwordKey: smtp_pass
+    passwordKey: password
+
 
 
 # --------------------------------------------------

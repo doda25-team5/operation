@@ -19,14 +19,15 @@ spec:
             matchType: =
             value: warning
         receiver: gmail-alerts
+
   receivers:
     - name: gmail-alerts
       emailConfigs:
-        - to: {{ .Values.monitoring.alerts.email.to | quote }}
-          from: {{ .Values.monitoring.alerts.email.from | quote }}
+        - to: {{ .Values.monitoring.alerts.email.to }}
+          from: {{ .Values.monitoring.alerts.email.from }}
           smarthost: "smtp.gmail.com:587"
           requireTLS: true
-          authUsername: {{ .Values.monitoring.alerts.email.username | quote }}
+          authUsername: {{ .Values.monitoring.alerts.email.username }}
           authPassword:
             name: {{ .Values.secrets.smtp.existingSecret }}
             key: {{ .Values.secrets.smtp.passwordKey }}
