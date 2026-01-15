@@ -1,11 +1,11 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: sms-gateway
+  name: sms-gateway # should match the name used in values.yaml for the ingressGateway
   namespace: istio-system
 spec:
   selector:
-    istio: ingressgateway
+    istio: ingressgateway  # should match the selector used in values.yaml for the ingressGateway
   servers:
     - port:
         number: 80
