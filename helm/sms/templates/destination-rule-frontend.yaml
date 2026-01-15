@@ -1,9 +1,9 @@
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: sms-frontend
+  name: {{ .Values.frontend.name }}-dr
 spec:
-  host: sms-frontend-svc
+  host: {{ .Values.frontend.service.name }}
   subsets:
     - name: stable
       labels:

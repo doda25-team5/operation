@@ -1,9 +1,9 @@
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: sms-backend
+  name: {{ .Values.backend.name }}-dr
 spec:
-  host: sms-backend-svc
+  host: {{ .Values.backend.service.name }} 
   subsets:
     - name: stable
       labels:
@@ -11,3 +11,6 @@ spec:
     - name: canary
       labels:
         version: v2
+    - name: shadow
+      labels:
+        version: v3

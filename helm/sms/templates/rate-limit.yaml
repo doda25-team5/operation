@@ -1,3 +1,4 @@
+{{if .Values.rateLimiting.enabled}} 
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
@@ -41,3 +42,4 @@ spec:
               default_value:
                 numerator: 100
                 denominator: HUNDRED
+{{- end }}

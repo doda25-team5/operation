@@ -1,56 +1,55 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: sms-frontend
+  name: {{ .Values.frontend.name }}-vs
 spec:
   hosts:
-    - "*"
+    - {{ .Values.ingress.host.primary | quote }}
+    - {{ .Values.ingress.host.stable | quote }}
+    - {{ .Values.ingress.host.canary | quote }}
   gateways:
-    - sms-gateway
+    - {{ .Values.istio.ingressGateway.name }}
   http:
-    # for grading purposes
+    # Grading shortcuts (host-based)
     - match:
         - authority:
-            exact: {{ .Values.ingress.canaryHost | quote }} 
+            exact: {{ .Values.ingress.host.canary | quote }}
       route:
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: canary
       headers:
         response:
           set:
             version: "v2-direct"
 
-
     - match:
         - authority:
-            exact: {{ .Values.ingress.stableHost | quote }} 
+            exact: {{ .Values.ingress.host.stable | quote }}
       route:
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: stable
       headers:
         response:
           set:
             version: "v1-direct"
 
-    # cookie based
+    # -------------------------------
+    # Cookie-based persistence
+    # -------------------------    # -------------------------------------
     - match:
         - headers:
             cookie:
               regex: ".*sms-user=stable.*"
       route:
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: stable
       headers:
-        request:
-          set:
-            x-app-version: "stable"
         response:
           set:
             version: "v1"
-
 
     - match:
         - headers:
@@ -58,41 +57,20 @@ spec:
               regex: ".*sms-user=canary.*"
       route:
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: canary
       headers:
-        request:
-          set:
-            x-app-version: "canary"
         response:
           set:
             version: "v2"
 
-    # --- DYNAMIC ROUTING ---
-    {{ if eq .Values.traffic.mode "shadow" }}
-    # [Mode: Shadow] Excellent Use Case
-    # 100% traffic to Stable, but MIRRORED to Canary (V2)
+    # -------------------------------
+    # Canary experiment (90/10)
+    # -------------------------------
+    {{- if eq .Values.traffic.mode "canary" }}
     - route:
         - destination:
-            host: sms-frontend-svc
-            subset: stable
-          weight: 100
-          headers:
-            response:
-              set:
-                version: "v1"
-      mirror:
-        host: sms-frontend-svc
-        subset: canary
-      mirrorPercentage:
-        value: 100.0
-
-    {{ else if eq .Values.traffic.mode "canary" }}
-    # [Mode: Canary] A4 Experiment
-    # 90/10 Split with Cookie Injection
-    - route:
-        - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: stable
           weight: 90
           headers:
@@ -102,7 +80,7 @@ spec:
               set:
                 version: "v1"
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: canary
           weight: 10
           headers:
@@ -112,16 +90,17 @@ spec:
               set:
                 version: "v2"
 
-    {{ else }}
-    # [Mode: Standard] Default Safety
-    # 100% Stable (V1)
+    {{- else }}
+    # -------------------------------
+    # Standard mode (100% stable)
+    # -------------------------------
     - route:
         - destination:
-            host: sms-frontend-svc
+            host: {{ .Values.frontend.service.name }}
             subset: stable
           weight: 100
-          headers:
-            response:
-              set:
-                version: "v1"
-    {{ end }}
+      headers:
+        response:
+          set:
+            version: "v1"
+    {{- end }}

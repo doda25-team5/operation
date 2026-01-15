@@ -361,6 +361,18 @@ kubectl get svc -n istio-system istio-ingressgateway
 
 ## A3 (and some of A4): Operate and Monitor Kubernetes
 
+### Scope & Assumptions
+
+This section assumes:
+- **Minikube** is running with MetalLB and Ingress enabled
+- **Istio** is installed and operational
+- **kube-prometheus-stack** is installed in the monitoring namespace
+- Infrastructure provisioning (A2) is complete
+
+The application is deployed via a **single Helm chart** that controls all behavior through `values.yaml`.
+
+---
+
 ### 1. Environment Setup
 
 Set these variables in *all* terminals that you use for the following setup to ensure consistency across commands:
@@ -370,6 +382,8 @@ export STACK_NAME="sms-monitor"
 export APP_NS="sms"
 export MON_NS="monitoring"
 ```
+These variables ensure ServiceMonitors, PrometheusRules, and AlertmanagerConfig resources correctly reference the monitoring stack.
+
 
 ### 2. Infrastructure Setup (Minikube & Istio)
 
@@ -384,6 +398,7 @@ minikube addons enable ingress
 # 2. Install Istio (Required for the App's Gateway)
 istioctl install --set profile=default -y
 ```
+---
 
 ### 3. Install Monitoring Stack
 
@@ -399,6 +414,8 @@ helm install $STACK_NAME prometheus-community/kube-prometheus-stack \
   --wait
 ```
 
+---
+
 ### 4. Secrets & Configuration
 
 **A. Create Gmail Secret (For Alerts)**
@@ -410,6 +427,7 @@ kubectl create secret generic sms-secrets \
   -n $MON_NS
 ```
 
+**Why pre-deployed?** Satisfies the "no credentials in deployment files" security requirement. The application references this secret but does not create it.
 
 
 **B. Configure values.yaml**
@@ -423,7 +441,7 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "your.email@gmail.com"
+      to: "your.email@gmail.com"        # Required for SMTP auth
       from: "your.email@gmail.com"      # Required for SMTP auth
       username: "your.email@gmail.com"  # Required for SMTP auth
 ```
@@ -443,8 +461,123 @@ helm upgrade --install sms ./helm/sms \
   --create-namespace \
   --wait
 ```
+**This single command deploys:**
+- Frontend (stable v1 + canary v2 deployments)
+- Backend (stable v1 + canary v2 + shadow v3 deployments)
+- ConfigMaps for application configuration
+- Istio resources (Gateway, VirtualServices, DestinationRules)
+- Monitoring resources (ServiceMonitors, PrometheusRules, AlertmanagerConfig)
+- Grafana dashboards (auto-imported)
 
-### 6. Verification I: Alerts (A3)
+---
+
+### 6. Configuration via values.yaml
+
+All application behavior is controlled through `helm/sms/values.yaml`. Modify these values and redeploy using `helm upgrade`.
+
+#### 6.1 Traffic Modes
+
+```yaml
+traffic:
+  mode: canary  # Options: standard | canary
+```
+
+**Traffic mode behavior:**
+
+| Mode | Frontend Split | Backend Split | Shadow (v3) Behavior |
+|------|----------------|---------------|----------------------|
+| `standard` | 100% stable (v1) | 100% stable (v1) | Receives mirrored copy of all v1 traffic |
+| `canary` | 90% stable (v1), 10% canary (v2) | 90% stable (v1), 10% canary (v2) | Receives mirrored copy of all v1 + v2 traffic |
+
+**Key point:** Shadow (v3) is **always running** and receives mirrored traffic from both v1 and v2. Shadow responses are discarded (zero user impact).
+
+**To change modes:**
+```bash
+# Switch to canary mode
+helm upgrade --install sms ./helm/sms -n $APP_NS --set traffic.mode=canary
+
+# Switch back to standard
+helm upgrade --install sms ./helm/sms -n $APP_NS --set traffic.mode=standard
+```
+
+#### 6.2 Scaling Replicas
+
+```yaml
+frontend:
+  replicas: 1          # Stable frontend replicas
+  canaryReplicas: 1    # Canary frontend replicas
+
+backend:
+  replicas: 1          # Stable backend replicas
+  canaryReplicas: 1    # Canary backend replicas
+  shadow:
+    replicas: 1        # Shadow backend replicas
+```
+
+**Understanding replicas:**
+- Each replica is an independent pod with its own counters
+- Metrics are per-pod, not globally shared
+- Prometheus aggregates metrics across all pods using `sum by (version)`
+- Increasing replicas improves throughput and fault tolerance
+
+**To scale:**
+```bash
+# Scale stable backend to 3 replicas
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set backend.replicas=3
+
+# Scale all components
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set frontend.replicas=2 \
+  --set backend.replicas=2 \
+  --set backend.canaryReplicas=2 \
+  --set backend.shadow.replicas=2
+```
+
+#### 6.3 Shadow Traffic
+
+Shadow (v3) is always enabled and receives mirrored traffic:
+
+```yaml
+backend:
+  shadow:
+    enabled: true
+    replicas: 1
+```
+
+**How shadow works:**
+- Shadow (v3) is a **separate deployment** that runs continuously
+- Istio mirrors **all traffic** (from both v1 and v2) to v3
+- Shadow processes requests but its responses are **discarded**
+- Users never see shadow responses (zero impact)
+- This enables safe testing of new models in production
+
+**Expected metrics:** `shadow_requests ≈ v1_requests + v2_requests`
+
+**To disable shadow:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set backend.shadow.enabled=false
+```
+
+#### 6.4 Enable/Disable Monitoring
+
+```yaml
+monitoring:
+  enabled: true
+```
+
+**To disable monitoring resources:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS \
+  --set monitoring.enabled=false
+```
+
+This removes ServiceMonitors, PrometheusRules, and AlertmanagerConfig from deployment.
+
+---
+
+### 7. Verification I: Alerts (A3)
 
 Now that the app is running, we can trigger the monitoring alerts.
 
@@ -456,7 +589,7 @@ kubectl get svc -n $MON_NS
 
 **2. Port Forwarding:**
 
-(Replace `SERVICE_NAME` below with the actual names found in step 1)
+Replace `YOUR_PROMETHEUS_SERVICE_NAME` and `YOUR_ALERTMANAGER_SERVICE_NAME` with the actual names from step 1 (e.g., `sms-monitor-kube-prometheu-prometheus`, `sms-monitor-kube-prometheu-alertmanager`).
 
 ** Reminder to add your stack every time you open a new terminal for port forwarding using the commands below**
 ```bash
@@ -479,23 +612,26 @@ kubectl get secret --namespace $MON_NS $STACK_NAME-grafana -o jsonpath="{.data.a
 kubectl port-forward -n $MON_NS svc/$STACK_NAME-grafana 3000:80 
 ```
 
+
+**Access dashboards:**
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- Alertmanager: [http://localhost:9093](http://localhost:9093)
+- Grafana: [http://localhost:3000](http://localhost:3000) (username: `admin`, password from command above)
+
 **3. Trigger HighRequestRate Alert:**
-Before running the code below, please run the following:
+Before running the code below, start **minikube tunnel** in a separate terminal and keep it running:
 
 ```bash
 minikube tunnel
 ```
-
 Get the External IP of the Istio Ingress Gateway
 Wait until 'EXTERNAL-IP' is a real IP and not <pending>
 ```bash
 kubectl get svc -n istio-system istio-ingressgateway
 ```
 
-
 Add the entry to your hosts file
-Replace <IP> with the value from the command above
-Use the command below to open your host file in edit mode.
+Note the External IP from the command above and use the command below to open your host file in edit mode.
 
 ```bash
 sudo nano /etc/hosts
@@ -513,7 +649,7 @@ Add this line at the bottom of your `/etc/hosts`
 ```
 
 
-Send traffic to the Ingress to simulate load. [Please refer to the first section in A4 to add the hosts for curl]
+Send traffic to the Ingress to simulate load. 
 
 
 * **Linux/Mac:**
@@ -527,7 +663,10 @@ seq 1 200 | xargs -n1 -P10 -I{} bash -c '
 '
 ```
 
-*Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the alert fire.*
+**Verification:**
+
+Check [http://localhost:9090/alerts](http://localhost:9090/alerts) to see the `HighRequestRate` alert fire. You should also receive an email notification.
+
 
 ---
 
@@ -535,14 +674,10 @@ seq 1 200 | xargs -n1 -P10 -I{} bash -c '
 
 ## Part 1: Shadow Launch 
 
-**Goal:** Deploy V2 (Canary) and mirror real traffic to it without users knowing.
+**Goal:** Use V3 (Shadow) and mirror real traffic to it without users knowing.
 
-### 1. Enable Shadow Mode
-We use the dynamic traffic switch to route 100% of users to Stable (V1) but mirror a copy to Canary (V2).
-
-```bash
-helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=shadow
-```
+### 1. Validation
+Ensure that `backend.shadow.enabled = true` in values.yaml 
 
 ### 2. Generate Traffic
 Run this loop to mimic user activity (POST requests). Immediately after running this loop, run step 3 on a new terminal to verify the mirroring.
@@ -557,13 +692,15 @@ done
 ```
 
 ### 3. Verification 
-Proof that V2 received the traffic by checking its logs. We filter specifically for the **backend container** to avoid Istio noise.
-Run the following in a new terminal:
-```bash
-# Follow the live traffic on the V2 backend (only shows new logs)
-kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
+Go to [http://localhost:9090](http://localhost:9090) (Prometheus).
+
+Run this query to verify Shadow (V3) received the mirrored traffic:
+
+```promql
+sum by (version) (rate(model_predictions_total[1m]))
 ```
-*Look for lines like: `"POST /predict HTTP/1.1" 200`*
+
+*You should see shadow traffic rate matching stable traffic rate.*
 
 ---
 
@@ -572,6 +709,7 @@ kubectl logs -n sms -l app=sms-backend,version=v2 -c backend -f --tail=0
 **Goal:** Release V2 to 10% of users and measure engagement.
 
 ### 1. Enable Canary Mode (90/10 Split)
+Please not that by default, this is already done from the get-go, so you may not have to run the code below.
 ```bash
 # Apply Canary Split
 helm upgrade --install sms ./helm/sms -n sms --set traffic.mode=canary
@@ -584,18 +722,20 @@ for i in {1..20}; do
   echo -n "Request $i: "
   curl -s -i -X POST http://sms.test.local/sms \
     -H "Content-Type: application/json" \
-    -d '{"sms":"shadow launch test","guess":"ham"}' \
+    -d '{"sms":"canary split 90-10 test","guess":"ham"}' \
   | grep -i "version:"
 done
 ```
-### 3. Verify Sticky Sessions
-Ensure cookies still pin users to versions.
-```bash
-# Should be V1
-curl -I --cookie "sms-user=stable" http://sms.test.local/sms
 
-# Should be V2
-curl -I --cookie "sms-user=canary" http://sms.test.local/sms
+### 3. Test Sticky Sessions
+```bash
+# Should see v2 headers in 10 of the requests.
+for i in {1..10}; do
+  echo "Canary request $i:"
+  curl -s -i \
+    -H "Cookie: sms-user=canary" \
+    http://sms.test.local/sms | grep -i version
+done
 ```
 ### 4. Test Sticky Sessions
 ```bash
@@ -620,5 +760,123 @@ Go to [http://localhost:3000](http://localhost:3000).
 * **Graph:** User Engagement (Request Rate).
 * **Evidence:** Show the Green Line (Stable) high and Yellow Line (Canary) low, running in parallel.
 
+---
 
 
+### Troubleshooting
+
+#### Issue: Alert not firing
+
+**Check:**
+```bash
+# Verify ServiceMonitor is discovered
+kubectl get servicemonitor -n $MON_NS
+
+# Check Prometheus targets
+# Go to http://localhost:9090/targets and look for sms-backend
+```
+
+**Fix:** Ensure `monitoring.prometheusRelease` in `values.yaml` matches your Prometheus Helm release name (`$STACK_NAME`).
+
+#### Issue: No external IP for Ingress Gateway
+
+**Check:**
+```bash
+kubectl get svc -n istio-system istio-ingressgateway
+```
+
+**Fix:** Ensure `minikube tunnel` is running in a separate terminal.
+
+#### Issue: Requests failing with connection errors
+
+**Check hosts file:**
+```bash
+cat /etc/hosts | grep sms.test.local
+```
+
+**Verify Gateway:**
+```bash
+kubectl get gateway -n $APP_NS
+kubectl get virtualservice -n $APP_NS
+```
+
+#### Issue: Shadow traffic not appearing
+
+**Check shadow deployment:**
+```bash
+kubectl get pods -n $APP_NS -l version=shadow
+```
+
+**Verify shadow is enabled in values.yaml:**
+```yaml
+backend:
+  shadow:
+    enabled: true
+```
+
+**Redeploy if needed:**
+```bash
+helm upgrade --install sms ./helm/sms -n $APP_NS
+```
+
+**Check Istio VirtualService for mirroring:**
+```bash
+kubectl get virtualservice -n $APP_NS -o yaml | grep -A 5 mirror
+```
+
+#### Issue: Shadow traffic doesn't equal v1 + v2
+
+This is expected behavior. Shadow receives **mirrored** traffic which means:
+- Shadow processes the same requests as v1 and v2
+- Metrics should show: `shadow_count ≈ v1_count + v2_count`
+- Small differences are normal due to timing and network conditions
+
+#### Issue: Port forwarding fails
+
+**Ensure environment variables are set:**
+```bash
+export STACK_NAME="sms-monitor"
+export MON_NS="monitoring"
+```
+
+**Verify service names match:**
+```bash
+kubectl get svc -n $MON_NS
+```
+
+---
+
+### Reset & Cleanup
+
+To completely reset the environment:
+
+#### Application-only reset (recommended)
+
+Use this when you want to redeploy the app, change traffic modes, replicas, or values.
+
+```bash
+# Delete application release
+helm uninstall sms -n $APP_NS
+
+# Delete application namespace
+kubectl delete namespace $APP_NS
+```
+
+#### Full Environment Reset
+
+```bash
+# Delete application
+helm uninstall sms -n $APP_NS
+
+# Delete monitoring stack
+helm uninstall $STACK_NAME -n $MON_NS
+
+# Delete namespaces
+kubectl delete namespace $APP_NS
+kubectl delete namespace $MON_NS
+
+# Delete Minikube cluster
+minikube delete
+```
+
+**To start fresh:** Return to Section 2 (Infrastructure Setup).

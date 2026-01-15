@@ -1,27 +1,41 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: sms-backend
+  name: {{ .Values.backend.name }}-vs
 spec:
   hosts:
-    - sms-backend-svc
+    - {{ .Values.backend.service.name }}
   http:
-    # frontend v1 → backend v1
+    # frontend v1 → backend v1 (+ optional shadow)
     - match:
         - sourceLabels:
-            app: sms-frontend
+            app: {{ .Values.frontend.name }}
             version: v1
       route:
         - destination:
-            host: sms-backend-svc
+            host: {{ .Values.backend.service.name }}
             subset: stable
+      {{- if .Values.backend.shadow.enabled }}
+      mirror:
+        host: {{ .Values.backend.service.name }}
+        subset: shadow
+      mirrorPercentage:
+        value: 100.0
+      {{- end }}
 
-    # frontend v2 → backend v2
+    # frontend v2 → backend v2 (+ optional shadow)
     - match:
         - sourceLabels:
-            app: sms-frontend
+            app: {{ .Values.frontend.name }}
             version: v2
       route:
         - destination:
-            host: sms-backend-svc
+            host: {{ .Values.backend.service.name }}
             subset: canary
+      {{- if .Values.backend.shadow.enabled }}
+      mirror:
+        host: {{ .Values.backend.service.name }}
+        subset: shadow
+      mirrorPercentage:
+        value: 100.0
+      {{- end }}
