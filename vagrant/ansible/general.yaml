@@ -122,9 +122,16 @@
         group: root
         mode: '0755'
 
+    - name: Check if containerd config exists
+      ansible.builtin.stat:
+        path: /etc/containerd/config.toml
+      register: containerd_config_stat
+
     - name: Generate default containerd configuration
       ansible.builtin.command: containerd config default
       register: containerd_default_config
+      when: not containerd_config_stat.stat.exists
+      changed_when: false
 
     - name: Write containerd default config to file
       ansible.builtin.copy:
@@ -133,24 +140,31 @@
         owner: root
         group: root
         mode: '0644'
+      when: not containerd_config_stat.stat.exists
 
     - name: Disable AppArmor in containerd config
       ansible.builtin.lineinfile:
         path: /etc/containerd/config.toml
-        regexp: '^(\s*)disable_apparmor ='
-        line: '    disable_apparmor = true'
+        regexp: '^(\s*)disable_apparmor\s*=\s*.*'
+        line: '\1disable_apparmor = true'
+        backrefs: yes
+        state: present
 
     - name: Update pause sandbox image
       ansible.builtin.lineinfile:
         path: /etc/containerd/config.toml
-        regexp: '^(\s*)sandbox_image ='
-        line: '    sandbox_image = "registry.k8s.io/pause:3.10"'
+        regexp: '^(\s*)sandbox_image\s*=\s*.*'
+        line: '\1sandbox_image = "registry.k8s.io/pause:3.10"'
+        backrefs: yes
+        state: present
 
     - name: Enable SystemdCgroup in runc options
       ansible.builtin.lineinfile:
         path: /etc/containerd/config.toml
-        regexp: '^(\s*)SystemdCgroup ='
-        line: '        SystemdCgroup = true'
+        regexp: '^(\s*)SystemdCgroup\s*=\s*.*'
+        line: '\1SystemdCgroup = true'
+        backrefs: yes
+        state: present
 
     - name: Restart containerd
       ansible.builtin.service:
