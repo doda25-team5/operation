@@ -90,6 +90,21 @@ The routing behavior depends on the configured traffic mode:
 
 ---
 
+## Deployment Diagram
+
+> **Figure 1: Deployment Structure and Request Flow of the SMS Application**
+
+![Deployment Structure and Request Flow](./images/sms-deploy-diagram.png)
+
+The diagram visualizes:
+- External user traffic entering via the Istio IngressGateway
+- The `sms-gateway` Gateway accepting HTTP traffic on port 80
+- Routing decisions taken at the Istio VirtualService
+  (host-based routing, sticky sessions, 90/10 canary split)
+- Traffic flowing to `sms-frontend-svc` (port 8080)
+- Internal communication to `sms-backend-svc` (port 8081)
+
+
 ## Sticky Sessions
 
 Sticky sessions ensure that once a user is routed to either the stable or canary frontend version, further requests from that user are always routed to the same version. This prevents users from switching between versions across page reloads.
