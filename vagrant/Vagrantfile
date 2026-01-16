@@ -7,6 +7,26 @@ ctrl_mem  = ENV.fetch("CTRL_MEM", "4096").to_i
 worker_cpus = ENV.fetch("WORKER_CPUS", "2").to_i
 worker_mem  = ENV.fetch("WORKER_MEM", "2048").to_i
 
+
+inventory_content = <<~INVENTORY
+  [ctrl]
+  ctrl ansible_host=192.168.56.100 ansible_user=vagrant
+  
+  [nodes]
+INVENTORY
+
+(1..workers).each do |i|
+  inventory_content += "node-#{i} ansible_host=192.168.56.#{100 + i} ansible_user=vagrant\n"
+end
+
+inventory_content += <<~INVENTORY
+  
+  [all:vars]
+  ansible_python_interpreter=/usr/bin/python3
+INVENTORY
+
+File.write("../inventory.cfg", inventory_content)
+
 Vagrant.configure("2") do |config|
 
   config.ssh.insert_key = false
