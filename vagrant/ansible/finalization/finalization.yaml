@@ -193,6 +193,37 @@
         create_namespace: true
         kubeconfig: "{{ kubeconfig_path }}" 
 
+    - name: Copy dashboard TLS certificate
+      copy:
+        src: "{{ playbook_dir }}/../../keys/dashboard-tls.crt"
+        dest: /home/vagrant/dashboard-tls.crt
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Copy dashboard TLS key
+      copy:
+        src: "{{ playbook_dir }}/../../keys/dashboard-tls.key"
+        dest: /home/vagrant/dashboard-tls.key
+        owner: vagrant
+        group: vagrant
+        mode: "0600"
+
+    - name: Create TLS secret for dashboard
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: dashboard-tls
+            namespace: kubernetes-dashboard
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', playbook_dir + '/../../keys/dashboard-tls.crt') | b64encode }}"
+            tls.key: "{{ lookup('file', playbook_dir + '/../../keys/dashboard-tls.key') | b64encode }}"
+
     - name: Apply Dashboard ServiceAccount
       kubernetes.core.k8s:
         state: present

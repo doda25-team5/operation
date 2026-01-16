@@ -308,12 +308,13 @@ Save and close the file.
 
 #### Access the Kubernetes dashboard
 
-Open your web browser and navigate to the local doashboard. 
+Open your web browser (preferably a new incognito tab) and navigate to: 
 
-```bash
+```
 https://dashboard.local
 ```
-If you do not see the logic page, try opening the link in the Incognito tab.
+Your browser will probably show a security warning. Click "Advanced" and proceed to the dashboard.local.
+The TLS key is in `vagrant/keys/dashboard-tls.key` and is automatically deployed during finalization.
 
 #### Generate the login admin token:
 
