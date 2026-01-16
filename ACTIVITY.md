@@ -137,7 +137,8 @@ Continued with the work from last week and improved the extension proposal to fu
 
 #### Priyansh: 
 
-#### Vedant: 
+#### Vedant: https://github.com/doda25-team5/lib-version/pull/3
+I worked on getting assignment 1 to excellent criteria by working on F11: Automatic versioning. Initially, our release and pre-release files were not configured correctly which has now been fixed. 
 
 #### Maja: https://github.com/doda25-team5/operation/pull/29
 This week I worked on beautifying A2 readme and making sure we fulfill the 'excellent' marks. inventory.cfg is created and updated as we run vagrant up to track the ansible hosts. I added regexp-based replacement in general.yaml and verified if its idempotent. Verified TLS certificate and key are provided (not auto-generated).
