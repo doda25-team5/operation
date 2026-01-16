@@ -127,5 +127,16 @@ Worked on improving the A2 Readme for the final presentation. For A4 I improved 
 
 ## WEEK 8 - All Assignments
 
+#### Erkin: 
+
+#### Jayran:  
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/25
+Continued with the work from last week and improved the extension proposal to fulfill the 'excellent' marks.
+
+#### Priyansh: 
+
+#### Vedant: 
+
 #### Maja: https://github.com/doda25-team5/operation/pull/29
 This week I worked on beautifying A2 readme and making sure we fulfill the 'excellent' marks. inventory.cfg is created and updated as we run vagrant up to track the ansible hosts. I added regexp-based replacement in general.yaml and verified if its idempotent. Verified TLS certificate and key are provided (not auto-generated).
