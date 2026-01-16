@@ -129,7 +129,8 @@ Worked on improving the A2 Readme for the final presentation. For A4 I improved 
 
 #### Erkin: 
 
-#### Jayran:  
+#### Jayran: https://github.com/doda25-team5/operation/pull/31
+Continued working on the deployment documentation. Made a sample deployment diagram but need to figure out how much more in depth i want to go also networking wise. 
 
 #### Nicolas: https://github.com/doda25-team5/operation/pull/25
 Continued with the work from last week and improved the extension proposal to fulfill the 'excellent' marks.
