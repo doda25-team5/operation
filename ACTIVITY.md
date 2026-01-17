@@ -127,7 +127,8 @@ Worked on improving the A2 Readme for the final presentation. For A4 I improved 
 
 ## WEEK 8 - All Assignments
 
-#### Erkin: 
+#### Erkin: https://github.com/doda25-team5/model-service/pull/11
+This week i first try to install helm chart on the kubernetes cluster that we created in assignment 2 and managed to to it. Afterwards i looked at the all assignments and identified what was missing. Finally, i created a stable and pre release workflows for the model-service repository and fulfilled the missing criteria that we were missing.
 
 #### Jayran: https://github.com/doda25-team5/operation/pull/31
 Continued working on the deployment documentation. Made a sample deployment diagram but need to figure out how much more in depth i want to go also networking wise. 
