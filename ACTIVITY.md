@@ -136,7 +136,8 @@ Continued working on the deployment documentation. Made a sample deployment diag
 #### Nicolas: https://github.com/doda25-team5/operation/pull/25
 Continued with the work from last week and improved the extension proposal to fulfill the 'excellent' marks.
 
-#### Priyansh: 
+#### Priyansh: https://github.com/doda25-team5/operation/pull/32
+This week, I had opened a PR on Thursday, which I then had to close since the implemented changes were a misunderstanding on my end. To compensate for the lack of meaningful work, I decided to work on further modularity of values.yaml, and now each backend image can be configured separately with their own environment variables and configmaps. Moreover, although https://github.com/doda25-team5/app/pull/12 is technically a PR which I worked on to add release and prerelease workflows to app, it's not a complete reflection of what I have done for the App repository. With my changes, the app repository is finally properly versioned in the POM.xml with the correct stable-release workflow and automatic version bumping without manual git tagging. This is reflected in my PR for the operation repository in values.yaml, where the stableTag and canaryTag for frontend correspond to the respective automatically released image versions. Another key task that I carried out was addressing the fact that our canary experiment changes had propogated to main, which I have since reverted so that the 'older' UI is reflected on main branch in the app repo, and the 'newer' UI is reflected in a branch called feature-new-ui, thereby also explaining the corresponding stableTag and canaryTag used in values.yaml.
 
 #### Vedant: https://github.com/doda25-team5/lib-version/pull/3
 I worked on getting assignment 1 to excellent criteria by working on F11: Automatic versioning. Initially, our release and pre-release files were not configured correctly which has now been fixed. 
