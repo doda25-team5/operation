@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backend.name }}-config-shadow
+data:
+  MODEL_DIR: {{ .Values.backend.model.shadow.dir | quote }}
+  MODEL_FILENAME: {{ .Values.backend.model.shadow.filename | quote }}
+  PREPROCESSOR_FILENAME: {{ .Values.backend.model.shadow.preprocessorFilename | quote }}
+  MODEL_URL: {{ .Values.backend.model.shadow.url | quote }}
+  PREPROCESSOR_URL: {{ .Values.backend.model.shadow.preprocessorUrl | quote }}
+  MODEL_PORT: "{{ .Values.backend.service.port }}"

@@ -592,7 +592,7 @@ helm upgrade --install sms ./helm/sms -n $APP_NS \
   --set backend.shadow.replicas=2
 ```
 
-#### 6.3 Shadow Traffic
+#### 6.3 Shadow Traffic (A4)
 
 Shadow (v3) is always enabled and receives mirrored traffic:
 

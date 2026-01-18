@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backend.name }}-config-canary
+data:
+  MODEL_DIR: {{ .Values.backend.model.canary.dir | quote }}
+  MODEL_FILENAME: {{ .Values.backend.model.canary.filename | quote }}
+  PREPROCESSOR_FILENAME: {{ .Values.backend.model.canary.preprocessorFilename | quote }}
+  MODEL_URL: {{ .Values.backend.model.canary.url | quote }}
+  PREPROCESSOR_URL: {{ .Values.backend.model.canary.preprocessorUrl | quote }}
+  MODEL_PORT: "{{ .Values.backend.service.port }}"
