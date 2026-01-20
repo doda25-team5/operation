@@ -38,7 +38,7 @@ spec:
               
           envFrom:
             - configMapRef:
-                name: {{ .Values.backend.name }}-config
+                name: {{ .Values.backend.name }}-config-stable
 
           env:
             - name: MODEL_VERSION
@@ -47,7 +47,7 @@ spec:
 
           volumeMounts:
             - name: model-data
-              mountPath: {{ .Values.backend.model.dir | quote }}
+              mountPath: {{ .Values.backend.storage.mountPath | quote }}
 
 
 

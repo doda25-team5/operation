@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backend.name }}-config-stable
+data:
+  MODEL_DIR: {{ .Values.backend.model.stable.dir | quote }}
+  MODEL_FILENAME: "{{ .Values.backend.model.stable.filename }}"
+  PREPROCESSOR_FILENAME: "{{ .Values.backend.model.stable.preprocessorFilename }}"
+  MODEL_URL: "{{ .Values.backend.model.stable.url }}"
+  PREPROCESSOR_URL: "{{ .Values.backend.model.stable.preprocessorUrl }}"
+  MODEL_PORT: "{{ .Values.backend.service.port }}"

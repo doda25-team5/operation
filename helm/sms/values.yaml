@@ -23,19 +23,19 @@ frontend:
 
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "2.1.1"
-    canaryTag: "latest"
+    stableTag: "0.0.1"
+    canaryTag: "0.0.2-feature-new-ui-260118-161200"
     pullPolicy: IfNotPresent
 
   service:
     name: sms-frontend-svc
-    port: 8080
+    port: 8084
     portName: http
     type: ClusterIP
 
   config:
     backendHost: sms-backend-svc
-    backendPort: 8081
+    backendPort: 8082
 
 # --------------------------------------------------
 # Backend
@@ -55,16 +55,31 @@ backend:
 
   service:
     name: sms-backend-svc
-    port: 8081
+    port: 8082
     type: ClusterIP
     portName: metrics
 
   model:
-    dir: "/mnt/shared/models"
-    filename: "model.joblib"
-    preprocessorFilename: "preprocessor.joblib"
-    url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
-    preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+    stable:
+      dir: "/mnt/shared/stable"
+      filename: "model.joblib"
+      preprocessorFilename: "preprocessor.joblib"
+      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
+      preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+
+    canary:
+      dir: "/mnt/shared/canary"
+      filename: "model.joblib"
+      preprocessorFilename: "preprocessor.joblib"
+      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib" # Intentionally same model as stable (frontend-only experiment)
+      preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+
+    shadow:
+      dir: "/mnt/shared/shadow"
+      filename: "model.joblib"
+      preprocessorFilename: "preprocessor.joblib"
+      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib" # TODO: change to shadow model
+      preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
 
   shadow:
     enabled: true
@@ -99,9 +114,9 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "erkinbasol@gmail.com"
-      from: "erkinbasol@gmail.com"
-      username: "erkinbasol@gmail.com"
+      to: "priyansh.rajusth@gmail.com"
+      from: "priyansh.rajusth@gmail.com"
+      username: "priyansh.rajusth@gmail.com"
 
 # --------------------------------------------------
 # Secrets
