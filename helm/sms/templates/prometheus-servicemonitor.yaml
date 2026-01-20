@@ -16,5 +16,9 @@ spec:
     - port: {{ .Values.frontend.service.portName }}
       path: /metrics
       interval: 30s
+
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_version]
+          targetLabel: version
 {{- end }}
 

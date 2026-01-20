@@ -18,7 +18,7 @@
   "panels": [
     {
       "type": "gauge",
-      "title": "Cumulative Sessions Started",
+      "title": "Cumulative Sessions Started by Version",
       "description": "Total number of unique sessions initiated since pod start.",
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
       "options": {
@@ -28,27 +28,36 @@
       },
       "targets": [
         {
-          "expr": "frontend_active_sessions",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version_label) (\n  label_replace(\n    frontend_active_sessions{version=\"v1\"},\n    \"version_label\",\n    \"v1 (stable release)\",\n    \"version\",\n    \"v1\"\n  )\n  or\n  label_replace(\n    frontend_active_sessions{version=\"v2\"},\n    \"version_label\",\n    \"v2 (canary release)\",\n    \"version\",\n    \"v2\"\n  )\n)",
+          "legendFormat": "{{version_label}}",
+          "refId": "A"
+        }
+      ]
+    }
+    ,
+    {
+      "type": "timeseries",
+      "title": "Total Requests per Version",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "options": {
+        "displayMode": "bars",
+        "barWidth": 0.85,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (version_label) ( label_replace( sms_requests_total{version=\"v1\"}, \"version_label\", \"v1 (stable release)\", \"version\", \"v1\" ) or label_replace( sms_requests_total{version=\"v2\"}, \"version_label\", \"v2 (canary release)\", \"version\", \"v2\" ) )",
+          "legendFormat": "{{version_label}}",
           "refId": "A"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Total Requests (Cumulative per Pod)",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
-      "targets": [
-        {
-          "expr": "sms_requests_total",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ]
-    },
-      {
-      "type": "timeseries",
-      "title": "Spam vs Ham Rate per Frontend Pod",
+      "title": "Spam vs Ham Rate per Frontend Version",
       "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
       "options": {
         "displayMode": "bars",
@@ -56,8 +65,8 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category, pod)",
-          "legendFormat": "{{pod}} – {{category}}",
+          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category, version)",
+          "legendFormat": "{{version}} – {{category}}",
           "refId": "A"
         }
       ]
