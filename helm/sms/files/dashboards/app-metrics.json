@@ -18,67 +18,75 @@
   "panels": [
     {
       "type": "gauge",
-      "title": "Cumulative Sessions Started",
-      "description": "Total number of unique sessions initiated since pod start.",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": false
-      },
+      "title": "Frontend Processing Requests (Absolute)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
       "targets": [
         {
-          "expr": "frontend_active_sessions",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version) (frontend_processing_requests)",
+          "legendFormat": "{{version}}",
           "refId": "A"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Total Requests (Cumulative per Pod)",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "title": "Request Rate (Relative)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
       "targets": [
         {
-          "expr": "sms_requests_total",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version) (rate(sms_requests_total[$interval]))",
+          "legendFormat": "{{version}}",
           "refId": "A"
         }
       ]
     },
-      {
+    {
       "type": "timeseries",
-      "title": "Spam vs Ham Rate per Frontend Pod",
-      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
-      "options": {
-        "displayMode": "bars",
-        "barWidth": 0.85
-      },
+      "title": "Total Requests (Absolute)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
       "targets": [
         {
-          "expr": "sum(rate(sms_prediction_result_total[$interval])) by (category, pod)",
-          "legendFormat": "{{pod}} – {{category}}",
+          "expr": "sum by (version) (sms_requests_total)",
+          "legendFormat": "{{version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Spam vs Ham Rate (Relative)",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (version, category) (rate(sms_prediction_result_total[$interval]))",
+          "legendFormat": "{{version}} – {{category}}",
           "refId": "A"
         }
       ]
     },
     {
       "type": "heatmap",
-      "title": "SMS Input Length Distribution",
-      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+      "title": "SMS Input Length Distribution (Absolute)",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
       "targets": [
         {
-          "expr": "sum by (le)(increase(sms_input_length_bucket[$interval]))",
+          "expr": "sum by (le) (increase(sms_input_length_bucket[$interval]))",
           "format": "heatmap",
           "refId": "A"
         }
-      ],
-      "options": {
-        "color": {
-          "mode": "scheme",
-          "scheme": "Greens"
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "SMS Input Length Distribution (Relative)",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (le) (rate(sms_input_length_bucket[$interval]))",
+          "format": "heatmap",
+          "refId": "A"
         }
-      }
+      ]
     }
   ],
   "time": { "from": "now-30m", "to": "now" }

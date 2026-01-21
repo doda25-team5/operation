@@ -1,20 +1,21 @@
-{{- if .Values.ingress.enabled }}
+{{- if and .Values.ingress.enabled (not .Values.istio.enabled) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.frontend.name }}-ingress
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
+  labels:
+    app: {{ .Values.frontend.name }}
 spec:
+  ingressClassName: nginx
   rules:
-  - host: {{ .Values.ingress.host | quote }}
-    http:
-      paths:
-      - path: {{ .Values.ingress.path }}
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ .Values.frontend.service.name }}
-            port:
-              number: {{ .Values.frontend.service.port }}
+    - host: {{ .Values.ingress.host.primary | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.frontend.service.name }}
+                port:
+                  number: {{ .Values.frontend.service.port }}
 {{- end }}

@@ -18,26 +18,37 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "User Engagement (Request Rate)",
-      "description": "Hypothesis: Better UI leads to higher interaction frequency. Canary (v2) should show higher RPS than Stable (v1).",
+      "title": "Request Rate per Version (Relative)",
+      "description": "Canary (v2) should show higher RPS than Stable (v1).",
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
       "targets": [
         {
-          "expr": "rate(sms_requests_total[$interval])",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version) (rate(sms_requests_total[$interval]))",
+          "legendFormat": "{{version}}",
           "refId": "A"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "P95 Latency (Safety Metric)",
-      "description": "Canary must not increase tail latency.",
+      "title": "Total Requests per Version (Absolute)",
       "gridPos": { "x": 0, "y": 10, "w": 24, "h": 10 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, pod)(rate(frontend_request_latency_seconds_bucket[$interval])))",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version) (sms_requests_total)",
+          "legendFormat": "{{version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "P95 Latency per Version (Safety Metric)",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (version, le) (rate(frontend_request_latency_seconds_bucket[$interval])))",
+          "legendFormat": "p95 {{version}}",
           "refId": "A"
         }
       ]

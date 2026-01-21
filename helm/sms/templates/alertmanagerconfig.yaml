@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: alertmanager-config
-  namespace: {{ .Values.namespaces.monitoring }}
+  namespace: {{ .Values.global.namespaces.monitoring }}
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:

@@ -19,13 +19,7 @@
     {
       "type": "gauge",
       "title": "Model File Size (bytes)",
-      "description": "Size of the loaded model file.",
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": false
-      },
       "targets": [
         {
           "expr": "model_file_size_bytes",
@@ -36,7 +30,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Total Model Predictions per Version (since Start)",
+      "title": "Total Predictions per Version",
       "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
       "targets": [
         {
@@ -48,11 +42,11 @@
     },
     {
       "type": "timeseries",
-      "title": "Prediction Latency (seconds)",
-      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 8 },
+      "title": "P95 Prediction Latency",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(model_prediction_latency_seconds_bucket[$interval])) by (le, version))",
+          "expr": "histogram_quantile(0.95, sum by (version, le) (rate(model_prediction_latency_seconds_bucket[$interval])))",
           "legendFormat": "p95 {{version}}",
           "refId": "A"
         }
@@ -60,17 +54,9 @@
     },
     {
       "type": "stat",
-      "title": "Shadow Consistency (v3 / (v1+v2))",
-      "description": "Should be ~1.0 when shadow traffic mirrors real traffic",
-      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 4 },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
+      "title": "Shadow Consistency Ratio",
+      "description": "v3 predictions / (v1 + v2)",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 4 },
       "targets": [
         {
           "expr": "sum(model_predictions_total{version=\"v3\"}) / sum(model_predictions_total{version=~\"v1|v2\"})",
@@ -78,7 +64,6 @@
         }
       ]
     }
-
   ],
   "time": { "from": "now-30m", "to": "now" }
 }

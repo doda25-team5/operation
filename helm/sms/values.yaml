@@ -1,17 +1,20 @@
 # --------------------------------------------------
-# Namespaces (created by Helm)
+# Global Namespaces (single source of truth)
 # --------------------------------------------------
-namespaces:
-  monitoring: monitoring
+global:
+  namespaces:
+    app: default
+    monitoring: default
 
 # --------------------------------------------------
 # Istio
 # --------------------------------------------------
 istio:
-  enabled: true
+  enabled: false
   ingressGateway:
     name: sms-gateway
     selector: ingressgateway
+
 # --------------------------------------------------
 # Frontend
 # --------------------------------------------------
@@ -23,8 +26,8 @@ frontend:
 
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "0.0.1"
-    canaryTag: "0.0.2-feature-new-ui-260118-161200"
+    stableTag: "0.0.2-feature-frontend-stable-metrics-fix-260121-170055"
+    canaryTag: "0.0.3-feature-new-ui-260121-172601"
     pullPolicy: IfNotPresent
 
   service:
@@ -87,7 +90,7 @@ backend:
 
   storage:
     enabled: true
-    type: hostPath          # REQUIRED FOR EXCELLENT
+    type: hostPath
     hostPath: /mnt/shared
     mountPath: /mnt/shared
 
@@ -98,18 +101,20 @@ traffic:
   mode: canary   # standard | canary
 
 ingress:
-  enabled: false
+  enabled: true
   host:
     primary: sms.test.local
     stable: stable.local
     canary: canary.local
 
 # --------------------------------------------------
-# Monitoring
+# Monitoring (app-owned)
 # --------------------------------------------------
 monitoring:
   enabled: true
-  prometheusRelease: sms-monitor  #should match the release/stack name of prometheus installation
+
+  # Name of the Prometheus stack (used for labels & selectors)
+  prometheusRelease: sms-monitor
 
   alerts:
     email:
@@ -119,6 +124,34 @@ monitoring:
       username: "priyansh.rajusth@gmail.com"
 
 # --------------------------------------------------
+# kube-prometheus-stack (Helm dependency)
+# --------------------------------------------------
+kube-prometheus-stack:
+  fullnameOverride: sms-monitor
+  
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      serviceMonitorSelector:
+        matchLabels:
+          release: sms-monitor
+      ruleSelector:
+        matchLabels:
+          release: sms-monitor
+    
+  alertmanager:
+      enabled: true
+      alertmanagerSpec:
+        alertmanagerConfigSelector:
+          matchLabels:
+            release: sms-monitor
+
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: admin123
+
+# --------------------------------------------------
 # Secrets
 # --------------------------------------------------
 secrets:
@@ -126,9 +159,8 @@ secrets:
     existingSecret: sms-secrets
     passwordKey: smtp_pass
 
-
 # --------------------------------------------------
 # Rate Limiting
 # --------------------------------------------------
 rateLimiting:
-  enabled: False
+  enabled: false

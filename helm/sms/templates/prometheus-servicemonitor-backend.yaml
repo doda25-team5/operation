@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ .Values.backend.name }}-sm
-  namespace: {{ .Values.namespaces.monitoring }}
+  namespace: {{ .Values.global.namespaces.monitoring }}
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
@@ -11,7 +11,8 @@ spec:
     matchLabels:
       app: {{ .Values.backend.name }}
   namespaceSelector:
-    any: true
+    matchNames:
+      - {{ .Values.global.namespaces.app }}
   endpoints:
     - port: {{ .Values.backend.service.portName }}
       path: /metrics

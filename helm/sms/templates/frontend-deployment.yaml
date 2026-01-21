@@ -26,6 +26,10 @@ spec:
             - containerPort: {{ .Values.frontend.service.port }}
               name: {{ .Values.frontend.service.portName }}
 
+          env:
+            - name: APP_VERSION
+              value: "v1" 
+              
           envFrom:
             - configMapRef:
                 name: {{ .Values.frontend.name }}-config
