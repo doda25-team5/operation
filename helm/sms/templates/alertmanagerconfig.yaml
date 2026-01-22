@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: alertmanager-config
-  namespace: {{ .Values.global.namespaces.monitoring }}
+  namespace: default
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
@@ -28,6 +28,6 @@ spec:
           requireTLS: true
           authUsername: {{ .Values.monitoring.alerts.email.username | quote }}
           authPassword:
-            name: {{ .Values.secrets.smtp.existingSecret }}
-            key: {{ .Values.secrets.smtp.passwordKey }}
+            name: {{ .Values.monitoring.alerts.email.secretName }}  # ← From values
+            key: {{ .Values.monitoring.alerts.email.secretKey }} # ← From values
 {{- end }}

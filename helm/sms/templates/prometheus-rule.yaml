@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: sms-frontend-rules
-  namespace: {{ .Values.global.namespaces.monitoring }}
+  namespace: default
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:

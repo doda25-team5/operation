@@ -1,67 +1,90 @@
-# --------------------------------------------------
-# Global Namespaces (single source of truth)
-# --------------------------------------------------
-global:
-  namespaces:
-    app: default
-    monitoring: default
+# ==================================================
+# SMS Checker - Helm Values
+# ==================================================
+# This chart supports two deployment modes:
+#
+# MODE 1: Ingress-only (no Istio)
+#   - Set: istio.enabled = false
+#   - Set: ingress.enabled = true
+#   - Access via: Nginx Ingress Controller
+#   - Use case: A3 requirements, simple deployments
+#
+# MODE 2: Istio Service Mesh
+#   - Set: istio.enabled = true
+#   - Set: ingress.enabled = false
+#   - Access via: Istio Gateway + VirtualServices
+#   - Use case: A4 requirements, canary, shadow launch
+# ==================================================
 
 # --------------------------------------------------
-# Istio
+# Istio Configuration
 # --------------------------------------------------
 istio:
-  enabled: true
+  enabled: true  # Toggle between Istio and Ingress-only modes
+  
+  # Ingress Gateway Configuration
+  # NOTE: The gateway itself is provisioned during cluster setup (A2)
+  # This chart only creates Gateway/VirtualService resources that reference it
   ingressGateway:
-    name: sms-gateway
-    selector: ingressgateway
+    name: sms-gateway           # Name of the Gateway resource created by this chart
+    selector: ingressgateway    # Label selector for the Istio ingress gateway pods
 
 # --------------------------------------------------
-# Frontend
+# Frontend (SMS Checker Web UI)
 # --------------------------------------------------
 frontend:
   name: sms-frontend
 
-  replicas: 1
-  canaryReplicas: 1
+  # Replica configuration
+  replicas: 1         # Stable version (v1)
+  canaryReplicas: 1   # Canary version (v2)
 
+  # Container images
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
     stableTag: "0.0.2-feature-frontend-stable-metrics-fix-260121-170055"
     canaryTag: "0.0.3-feature-new-ui-260121-172601"
     pullPolicy: IfNotPresent
 
+  # Service configuration
   service:
     name: sms-frontend-svc
     port: 8084
     portName: http
     type: ClusterIP
 
+  # Backend connection settings
   config:
     backendHost: sms-backend-svc
     backendPort: 8082
 
 # --------------------------------------------------
-# Backend
+# Backend (Model Service API)
 # --------------------------------------------------
 backend:
   name: sms-backend
 
-  replicas: 1
-  canaryReplicas: 1
+  # Replica configuration
+  replicas: 1         # Stable version (v1)
+  canaryReplicas: 1   # Canary version (v2)
 
+  # Container images
   image:
     repository: ghcr.io/doda25-team5/sms-backend
     stableTag: "latest"
     canaryTag: "latest"
-    shadowTag: "latest"
+    shadowTag: "latest"  # Shadow launch (v3)
     pullPolicy: IfNotPresent
 
+  # Service configuration
   service:
     name: sms-backend-svc
     port: 8082
     type: ClusterIP
-    portName: metrics
+    portName: metrics  # Exposed for Prometheus scraping
 
+  # Model file configuration
+  # Models are downloaded on first startup and cached in hostPath volume
   model:
     stable:
       dir: "/mnt/shared/stable"
@@ -74,68 +97,90 @@ backend:
       dir: "/mnt/shared/canary"
       filename: "model.joblib"
       preprocessorFilename: "preprocessor.joblib"
-      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib" # Intentionally same model as stable (frontend-only experiment)
+      # NOTE: Intentionally same model as stable (frontend-only A4 experiment)
+      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
       preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
 
     shadow:
       dir: "/mnt/shared/shadow"
       filename: "model.joblib"
       preprocessorFilename: "preprocessor.joblib"
-      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib" # TODO: change to shadow model
+      # TODO: Change to actual shadow model URL when available
+      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
       preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
 
+  # Shadow launch configuration (A4 additional use case)
   shadow:
     enabled: true
     replicas: 1
 
+  # Persistent storage for model files
+  # Mounts VirtualBox shared folder from cluster provisioning (A2)
   storage:
     enabled: true
     type: hostPath
-    hostPath: /mnt/shared
-    mountPath: /mnt/shared
+    hostPath: /mnt/shared        # Must match VirtualBox shared folder mount
+    mountPath: /mnt/shared       # Container mount path
 
 # --------------------------------------------------
-# Traffic Management (Istio)
+# Traffic Management
 # --------------------------------------------------
 traffic:
-  mode: canary   # standard | canary
-
-ingress:
-  enabled: false
-  className: nginx
-  host:
-    primary: sms.test.local
-    stable: stable.local
-    canary: canary.local
+  mode: canary  # Options: standard | canary
+  # - standard: 100% stable version
+  # - canary: 90/10 split with sticky sessions
 
 # --------------------------------------------------
-# Monitoring (app-owned)
+# Ingress (Nginx - used when Istio is disabled)
+# --------------------------------------------------
+ingress:
+  enabled: false  # Default: true for ingress-only mode
+  className: nginx
+  
+  # Host configuration
+  # Add these to /etc/hosts pointing to Ingress Controller IP
+  host:
+    primary: sms.test.local   # Main app access
+    stable: stable.local      # Direct access to stable version (for grading)
+    canary: canary.local      # Direct access to canary version (for grading)
+
+# --------------------------------------------------
+# Monitoring (Prometheus, Grafana, AlertManager)
 # --------------------------------------------------
 monitoring:
   enabled: true
-
-  # Name of the Prometheus stack (used for labels & selectors)
+  
+  # Release name used for label matching
+  # MUST match kube-prometheus-stack.fullnameOverride, and all the matchLabels below
   prometheusRelease: sms-monitor
 
+  # Email alerting configuration
   alerts:
     email:
       enabled: true
       to: "priyansh.rajusth@gmail.com"
       from: "priyansh.rajusth@gmail.com"
       username: "priyansh.rajusth@gmail.com"
+      password: "PLACEHOLDER_SET_WITH_HELM_INSTALL"  
+      # password: must be provided via --set monitoring.alerts.email.password="your-gmail-app-password"
+      secretName: sms-secrets  # ← Name of the Secret to create
+      secretKey: smtp_pass     # ← Key within the Secret
 
 # --------------------------------------------------
-# kube-prometheus-stack (Helm dependency)
+# kube-prometheus-stack (Helm Chart Dependency)
 # --------------------------------------------------
+# This installs Prometheus, Grafana, and AlertManager
 kube-prometheus-stack:
   fullnameOverride: sms-monitor
   
   prometheus:
     enabled: true
     prometheusSpec:
+      # Only scrape ServiceMonitors with matching label
       serviceMonitorSelector:
         matchLabels:
           release: sms-monitor
+      # Only load PrometheusRules with matching label
       ruleSelector:
         matchLabels:
           release: sms-monitor
@@ -143,28 +188,20 @@ kube-prometheus-stack:
   alertmanager:
     enabled: true
     alertmanagerSpec:
+      # Only load AlertmanagerConfigs with matching label
       alertmanagerConfigSelector:
         matchLabels:
           release: sms-monitor
-      alertmanagerConfigNamespaceSelector:
-        matchNames:
-          - default
 
   grafana:
     enabled: true
     adminUser: admin
     adminPassword: admin123
+    
+    # Auto-import dashboards from ConfigMap
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        searchNamespace: default
 
-# --------------------------------------------------
-# Secrets
-# --------------------------------------------------
-secrets:
-  smtp:
-    existingSecret: sms-secrets
-    passwordKey: smtp_pass
-
-# --------------------------------------------------
-# Rate Limiting
-# --------------------------------------------------
-rateLimiting:
-  enabled: false
