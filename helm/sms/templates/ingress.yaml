@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ .Values.frontend.name }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .Values.ingress.className }}
   rules:
     - host: {{ .Values.ingress.host.primary | quote }}
       http:

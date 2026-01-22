@@ -18,6 +18,7 @@ spec:
       for: 2m
       labels:
         severity: warning
+        namespace: default
       annotations:
         summary: "High request rate on SMS frontend ({{`{{`}} $labels.version {{`}}`}})"
         description: |

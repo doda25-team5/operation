@@ -10,7 +10,7 @@ global:
 # Istio
 # --------------------------------------------------
 istio:
-  enabled: false
+  enabled: true
   ingressGateway:
     name: sms-gateway
     selector: ingressgateway
@@ -101,7 +101,8 @@ traffic:
   mode: canary   # standard | canary
 
 ingress:
-  enabled: true
+  enabled: false
+  className: nginx
   host:
     primary: sms.test.local
     stable: stable.local
@@ -140,11 +141,14 @@ kube-prometheus-stack:
           release: sms-monitor
     
   alertmanager:
-      enabled: true
-      alertmanagerSpec:
-        alertmanagerConfigSelector:
-          matchLabels:
-            release: sms-monitor
+    enabled: true
+    alertmanagerSpec:
+      alertmanagerConfigSelector:
+        matchLabels:
+          release: sms-monitor
+      alertmanagerConfigNamespaceSelector:
+        matchNames:
+          - default
 
   grafana:
     enabled: true
