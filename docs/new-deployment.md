@@ -191,37 +191,170 @@ They enable version-aware routing when combined with VirtualServices.
 - Subsets:
   - `stable` -> `version: v1`
   - `canary` -> `version: v2`
+  - `shadow` -> `version: v3`  
 
 VirtualServices select these subsets to route traffic to specific versions.
 
 ### 4.6 Configuration Resources
 
-Configuration is externalized using ConfigMaps to decouple configuration from container images.
+Configuration is externalized using Kubernetes ConfigMaps to decouple runtime configuration from container images. This allows different deployments to be configured independently without rebuilding images and supports experimentation across versions.
 
-- **Frontend ConfigMap:** `sms-frontend-config`
-  - Contains backend host, backend port, and image-related configuration
+#### Frontend Configuration
 
-- **Backend ConfigMap:** `sms-backend-config`
-  - Contains model and preprocessing configuration
+- **ConfigMap:** `sms-frontend-config`
 
-### 4.7 Monitoring and Observability Resources
+The frontend uses a **single shared ConfigMap**, even though multiple frontend deployments (stable and canary) exist.
 
-Observability is integrated using Prometheus-compatible resources.
+This is because:
+- All frontend versions communicate with the same backend service
+- Backend hostnames and ports are the same across frontend versions
+- The frontend experiment focuses on UI and behavior changes, not backend connectivity
 
-- **ServiceMonitor:** `sms-frontend-sm`
-  - Enables Prometheus to scrape frontend metrics
-  - Matches services with label `app: sms-frontend`
+Using a single ConfigMap ensures configuration consistency across frontend versions and avoids unnecessary duplication, while still allowing version-specific behavior to be implemented inside the application code.
 
-- **PrometheusRule:** `sms-backend-rules`
-  - Defines alerting rules for backend behavior
+#### Backend Configuration
+
+Each backend deployment uses its **own ConfigMap**, allowing backend versions to be configured independently.
+
+- **Stable backend ConfigMap:** `sms-backend-config-stable`
+- **Canary backend ConfigMap:** `sms-backend-config-canary`
+- **Shadow backend ConfigMap:** `sms-backend-config-shadow`
+
+These ConfigMaps contain:
+- Model configuration
+- Preprocessing parameters
+- Version-specific runtime settings
+
+Separate ConfigMaps are required because:
+- Backend versions may use different models or preprocessing pipelines
+- Canary and shadow deployments may experiment with new model versions or parameters
+- Independent configuration allows backend behavior to be different safely across experiments
+
+This design enables backend experimentation without affecting the stable backend or requiring image rebuilds.
+
+---
+
+### 4.7 Monitoring Resources
+
+Monitoring is integrated using Prometheus and Grafana to monitor application behavior, support continuous experimentation, and detect abnormal system conditions through alerting.
+
+The monitoring setup focuses on **application-level metrics**, allowing us to visualize request behavior, performance trends, and experiment impacts.
+
+#### ServiceMonitors
+
+ServiceMonitors are used to enable Prometheus to discover and scrape metrics exposed by the application services.
+
+- **Frontend ServiceMonitor:** `sms-frontend-sm`
+  - Scrapes metrics from all frontend service deployments and instances
+  - Matches services labeled `app: sms-frontend`
+  - Collects metrics such as:
+    - HTTP request rates
+    - Version-specific request counts (stable vs canary)
+    - Request handling behavior under experimental traffic
+
+- **Backend ServiceMonitor:** `sms-backend-sm`
+  - Scrapes metrics from backend service deployments and instances
+  - Matches services labeled `app: sms-backend`
+  - Collects metrics related to:
+    - Total predictions
+    - Model size bytes
+
+ServiceMonitors allow metrics to be collected consistently across stable, canary, and shadow deployments.
+
+#### PrometheusRules (Alerting Logic)
+
+Alerting behavior is defined using PrometheusRules that continuously evaluate collected metrics and trigger alerts when predefined conditions are met.
+
+- **PrometheusRule:** `sms-frontend-rules`
+- Deployed in the **default namespace**
+
+Currently, the deployment defines the following alert:
+
+- **Alert name:** `HighFrontendRequestRate`
+- **Condition:**  
+  The frontend request rate receives more than 15 requests per minute continuously for **2 minutes**
+- **Purpose:**  
+  Detects abnormal traffic spikes or unexpected load.
+
+#### Alertmanager Configuration and Notification Delivery
+
+Alert delivery and notification routing are handled by Alertmanager.
 
 - **AlertmanagerConfig:** `sms-alerts`
-  - Configures alert delivery (e.g., email notifications)
-  - Deployed in the monitoring namespace
+- Deployed in the **default namespace**
+
+Alertmanager is configured to:
+- Send alert notifications via **Gmail email**
+- Route alerts to a predefined recipient inbox for the project team
+- Group alerts by **alert name**, ensuring that repeated firings of the same alert are aggregated into a single notification thread
+
+Grouping alerts by `alertname` reduces notification noise and makes it easier to track ongoing incidents without being overwhelmed by duplicate messages.
+
+#### Grafana Dashboards
+
+Grafana is used to visualize application-level metrics collected by Prometheus and allow us to analyze different metrics across development and cthe continuous experimentation. 
+
+All dashboards are provisioned via a single ConfigMap:
 
 - **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
-  - Provides predefined dashboards for visualizing metrics
-  - Used to compare stable and canary behavior during experiments
+
+This ConfigMap defines **three predefined dashboards**, each serving a distinct purpose in the system.
+
+--- 
+
+##### Frontend Dashboard
+
+The **Frontend Dashboard** provides an overview of user-facing behavior and request patterns across frontend versions (stable and canary).
+
+It visualizes frontend-specific metrics such as:
+- **Request rate** per version  
+  (counter → rate), based on `sms_requests_total`
+- **Total request count** per version  
+  (counter), showing cumulative traffic
+- **Frontend processing concurrency**  
+  (gauge), indicating in-flight requests
+- **Classification result rates** (spam vs ham)  
+  (counter → rate), based on `sms_prediction_result_total`
+- **Input length distributions**  
+  (histogram), visualized as heatmaps using `sms_input_length_bucket`
+
+---
+
+##### Backend Dashboard
+
+The **Backend Dashboard** focuses on model-related behavior and backend performance.
+
+It includes metrics such as:
+- **Total predictions per version**  
+  (counter), using `model_predictions_total`
+- **Prediction latency (P95)**  
+  (histogram → quantile), derived from `model_prediction_latency_seconds_bucket`
+- **Model file size per version**  
+  (gauge), using `model_file_size_bytes`
+- **Shadow consistency ratio**  
+  (derived metric), comparing shadow predictions against stable and canary outputs
+
+---
+
+##### Continuous Experimentation Dashboard (Frontend Canary)
+
+The **Continuous Experimentation Dashboard** is specifically designed for the support and evaluation of the frontend canary experiment.
+
+It visualizes the experiment hypothesis:
+
+> *Does the new frontend UI (v2 canary) increase user engagement compared to the stable version (v1)?*
+
+Key metrics and visualizations include:
+- **Request rate per version (key metric)**  
+  (counter → rate), based on `sms_requests_total`
+- **Engagement multiplier**  
+  (derived metric), normalizing request rates by traffic split (90/10)
+- **Automated decision recommendation**  
+  (stat panel), classifying the experiment outcome (accept / reject)
+- **Classification result rates** (spam vs ham)  
+  (counter → rate), used as a safety check
+- **P95 frontend latency per version** 
+  (histogram → quantile), ensuring performance is not degraded
 
 ### 4.8 Optional and Supporting Resources
 
@@ -240,44 +373,114 @@ External users access the application through the Istio IngressGateway.
 
 This access model provides a controlled entry point into the cluster.
 
+![Cluster External Access](./images/cluster-external-access-diagram.png)
+
 ---
 
 ## 6. Request Flow Through the Cluster
 
-This section explains how requests move through the system under different routing scenarios.
+This section explains how requests progress through the cluster under different routing scenarios.  
+Each flow describes how Kubernetes and Istio resources interact to route traffic from external users to application pods, and how routing decisions are applied during experimentation.
 
-### 6.1 Baseline Request Flow (No Canary)
+### 6.1 Baseline Request Flow (Stable Only)
 
-A typical request follows these steps:
+In the baseline scenario, no experimentation is active and all traffic is routed to the stable frontend version.
 
-1. A user sends an HTTP request to the application hostname
-2. The request enters the cluster via the Istio IngressGateway
-3. The Gateway forwards the request to the VirtualService
-4. The VirtualService routes the request to the stable frontend service
-5. The frontend service load balances the request across frontend pods
-6. The frontend communicates with the backend service to retrieve predictions
-7. The response is returned to the user
+1. **Client Request**  
+   A user sends an HTTP request to the application hostname (e.g., `sms.test.local`).  
+   From the user’s perspective, the request is sent over HTTP on port 80.
+
+2. **IngressGateway (External Entry Point)**  
+   The request reaches the Istio IngressGateway, which is the only resource exposed externally.  
+   The IngressGateway accepts the request on port 80 and forwards it into the service mesh.
+
+3. **Istio Gateway (Traffic Admission)**  
+   The `sms-gateway` Gateway resource matches the incoming request based on port and protocol.  
+   At this stage, no routing decision is made; the Gateway only determines whether the request is allowed into the mesh.
+
+4. **VirtualService (Routing Decision)**  
+   The frontend VirtualService evaluates the request.  
+   Since no canary or shadow routing is active, the VirtualService forwards all traffic to the stable frontend subset.
+
+5. **DestinationRule (Subset Resolution)**  
+   The VirtualService references the frontend DestinationRule to get the stable subset, which corresponds to frontend pods labeled with `version: v1`.
+
+6. **Frontend Service (Load Balancing)**  
+   Traffic is sent to the `sms-frontend-svc` Kubernetes Service, which load balances requests across stable frontend pods.
+
+7. **Frontend → Backend Communication**  
+   The frontend pod sends an internal HTTP request to the backend service (`sms-backend-svc`) on port 8081.  
+   Backend routing follows a similar VirtualService/DestinationRule mechanism but remains entirely internal to the cluster.
+
+8. **Response Path**  
+   The backend returns the prediction to the frontend, which generates the final response.  
+   The response is sent back through the service mesh and returned to the user via the IngressGateway.
+
+---
 
 ### 6.2 Canary Experiment Request Flow (90/10 Split)
 
-During canary experimentation:
+In the canary experiment, traffic is split between stable and canary frontend versions to evaluate new behavior under real user traffic.
 
-- The VirtualService applies a 90/10 traffic split
-- 90% of requests are routed to the stable frontend version
-- 10% of requests are routed to the canary frontend version
-- Sticky sessions ensure consistent routing for individual users
+1. **Request Entry**  
+   Requests enter the cluster through the IngressGateway and Gateway in the same way as in the baseline flow.
 
-The routing decision is taken at the VirtualService level.
+2. **VirtualService (Traffic Splitting Logic)**  
+   The frontend VirtualService applies canary routing rules:
+   - A percentage-based split is defined (90% stable, 10% canary)
+   - Routing decisions are taken **per request**
+
+3. **Sticky Session Evaluation**  
+   Before applying the split, the VirtualService checks for the presence of a routing cookie:
+   - If a cookie is present, the request is routed consistently to the previously assigned version
+   - If no cookie is present, the request is probabilistically assigned to stable or canary
+
+4. **DestinationRule (Version Selection)**  
+   Based on the routing decision, the VirtualService selects either the stable or canary subset as defined in the DestinationRule:
+   - Stable subset → frontend pods with `version: v1`
+   - Canary subset → frontend pods with `version: v2`
+
+5. **Service-Level Load Balancing**  
+   The selected traffic is forwarded to the frontend Service, which load balances across pods of the chosen version.
+
+6. **Backend Interaction**  
+   Both frontend versions communicate with the backend service in the same way.  
+   Backend routing remains internal and does not affect the user-facing experiment.
+
+7. **Response Delivery**  
+   Responses are returned to the user through the IngressGateway, with users consistently interacting with a single frontend version across requests.
+
+---
 
 ### 6.3 Shadow Experiment Request Flow
 
-In shadow mode:
+Shadow experiments allow evaluation of new versions without exposing them to users.
 
-- All user traffic is routed to the stable frontend version
-- Requests are mirrored to the canary frontend version
-- Mirrored requests do not affect the client response
+1. **Primary Request Path**  
+   All user requests are routed to the stable frontend version using the same process as in the baseline flow.
 
-This allows evaluation of new versions without exposing them to users.
+2. **VirtualService (Mirroring Configuration)**  
+   The frontend VirtualService is configured to mirror requests:
+   - The primary request is forwarded to the stable subset
+   - A copy of the request is sent to the shadow (canary) subset
+
+3. **Mirrored Traffic Execution**  
+   The mirrored request is processed by the shadow frontend pods:
+   - It follows the same internal execution path
+   - It may trigger backend requests and generate responses
+   - Its response is discarded by the mesh
+
+4. **Isolation from User Response**  
+   Only the response from the stable frontend is returned to the user.  
+   Mirrored traffic has no impact on user-visible behavior, latency, or correctness.
+
+5. **Observability and Evaluation**  
+   Metrics generated by shadow requests are collected and visualized:
+   - Request counts
+   - Latency
+   - Backend interaction behavior
+
+Shadowing enables safe validation of new frontend behavior and performance characteristics before exposing it to users.
 
 ---
 
