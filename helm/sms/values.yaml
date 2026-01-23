@@ -36,13 +36,13 @@ frontend:
   name: sms-frontend
 
   # Replica configuration
-  replicas: 1         # Stable version (v1)
-  canaryReplicas: 1   # Canary version (v2)
+  replicas: 3         # Stable version (v1)
+  canaryReplicas: 2   # Canary version (v2)
 
   # Container images
   image:
     repository: ghcr.io/doda25-team5/sms-frontend
-    stableTag: "0.0.2-feature-frontend-stable-metrics-fix-260121-170055"
+    stableTag: "0.0.2"
     canaryTag: "0.0.3-feature-new-ui-260121-172601"
     pullPolicy: IfNotPresent
 
@@ -72,8 +72,8 @@ backend:
   image:
     repository: ghcr.io/doda25-team5/sms-backend
     stableTag: "latest"
-    canaryTag: "latest"
-    shadowTag: "latest"  # Shadow launch (v3)
+    canaryTag: "latest" # TODO change for canary release
+    shadowTag: "latest"  # Shadow launch (v3) -> TODO change for shadow release
     pullPolicy: IfNotPresent
 
   # Service configuration
@@ -106,8 +106,8 @@ backend:
       filename: "model.joblib"
       preprocessorFilename: "preprocessor.joblib"
       # TODO: Change to actual shadow model URL when available
-      url: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/model.joblib"
-      preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/test-f9-ghcli/preprocessor.joblib"
+      url: "https://github.com/doda25-team5/model-service/releases/download/shadow/model.joblib"
+      preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/shadow/preprocessor.joblib"
 
   # Shadow launch configuration (A4 additional use case)
   shadow:
@@ -153,6 +153,10 @@ monitoring:
   # Release name used for label matching
   # MUST match kube-prometheus-stack.fullnameOverride, and all the matchLabels below
   prometheusRelease: sms-monitor
+  hosts:
+    grafana: grafana.local
+    prometheus: prometheus.local
+    alertmanager: alertmanager.local
 
   # Email alerting configuration
   alerts:
@@ -173,19 +177,8 @@ monitoring:
 kube-prometheus-stack:
   fullnameOverride: sms-monitor
   
-  # ------------------------------------------------
-  # 1. Prometheus Configuration
-  # ------------------------------------------------
   prometheus:
     enabled: true
-    # Enable Ingress for access via prometheus.local
-    ingress:
-      enabled: true
-      ingressClassName: nginx
-      hosts:
-        - prometheus.local
-      paths:
-        - /
     prometheusSpec:
       # Only scrape ServiceMonitors with matching label
       serviceMonitorSelector:
@@ -196,44 +189,24 @@ kube-prometheus-stack:
         matchLabels:
           release: sms-monitor
     
-  # ------------------------------------------------
-  # 2. AlertManager Configuration
-  # ------------------------------------------------
   alertmanager:
     enabled: true
-    # Enable Ingress for access via alertmanager.local
-    ingress:
-      enabled: true
-      ingressClassName: nginx
-      hosts:
-        - alertmanager.local
-      paths:
-        - /
     alertmanagerSpec:
       # Only load AlertmanagerConfigs with matching label
       alertmanagerConfigSelector:
         matchLabels:
           release: sms-monitor
 
-  # ------------------------------------------------
-  # 3. Grafana Configuration
-  # ------------------------------------------------
   grafana:
     enabled: true
     adminUser: admin
     adminPassword: admin123
-    
-    # Enable Ingress for access via grafana.local
-    ingress:
-      enabled: true
-      ingressClassName: nginx
-      hosts:
-        - grafana.local
-      path: /
-    
-    # Auto-import dashboards from ConfigMap
-    sidecar:
-      dashboards:
-        enabled: true
-        label: grafana_dashboard
-        searchNamespace: default
+
+  prometheusOperator:
+    admissionWebhooks:
+      patch:
+        podAnnotations:
+          sidecar.istio.io/inject: "false"
+      cleanupProxy:
+        podAnnotations:
+          sidecar.istio.io/inject: "false"
