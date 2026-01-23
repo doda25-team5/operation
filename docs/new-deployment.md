@@ -19,35 +19,14 @@ The deployment uses Kubernetes as the orchestration platform and Istio as the se
 
 ## 2. Deployed Namespaces
 
-### 2.1 Application Namespace (`sms`)
-
-All application-related resources are deployed into the `sms` namespace. This namespace contains:
+All application and monitoring related resources are deployed into the `default` namespace. This namespace contains:
 
 - Frontend and backend Deployments
 - Kubernetes Services exposing these Deployments
 - Istio traffic management resources (Gateway, VirtualServices, DestinationRules)
 - Observability-related resources such as ServiceMonitors
-
-This namespace represents the complete application deployment and is the primary focus of this document.
-
-### 2.2 Monitoring Namespace (`monitoring`) -- MIGHT NEED TO CHANGE
-
-Observability components are deployed into a separate `monitoring` namespace. This namespace contains:
-
 - Prometheus for metrics collection
 - Grafana for metrics visualization
-
-Prometheus scrapes metrics exposed by application services in the `sms` namespace, while Grafana dashboards are used to analyze system behavior and compare experimental results.
-
-### 2.3 Supporting System Namespaces
-
-Additional namespaces exist to support cluster operation, such as:
-
-- Istio control plane namespaces
-- Kubernetes system namespaces
-
-These namespaces are required for cluster functionality but are not part of the application deployment itself 
-
 ---
 
 ## 3. Application-Level Components (Logical View)
@@ -136,6 +115,13 @@ ServiceMonitors are used to integrate application services with Prometheus.
 - They define which services expose metrics
 - They specify how Prometheus discovers and scrapes metrics endpoints
 - This enables consistent monitoring across application versions
+### 4.7 ConfigMaps
+
+Configmaps are used to store non-confidential data in key value pairs. It is used to provide the environment variables for the container images. 
+
+### 4.8 Secrets
+
+Secrets are used to store and manage sensitive information, such as passwords, API tokens, or SSH keys. They help prevent sensitive data from being hard-coded into application images or configuration files.
 
 ---
 
@@ -171,6 +157,7 @@ This section provides a concise summary of all resource names, labels, ports, an
 - **ServiceMonitor:** `sms-frontend-sm` (for Prometheus, matches app: sms-frontend)
 - **PrometheusRule:** `sms-backend-rules` (alerting rules for backend)
 - **AlertmanagerConfig:** `sms-alerts` (email alerting, in monitoring namespace)
+- **Secret:** `sms-secrets` (for storing the 16 digit Google app password)
 - **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
 
 ---
@@ -247,8 +234,61 @@ Metrics flow through the system as follows:
 4. Grafana dashboards visualize metrics and compare experimental variants
 
 This observability setup enables data-driven evaluation of deployment changes.
-
 ---
+## 9. Metrics
+
+### Frontend Metrics Overview
+
+- **Frontend Processing Requests (Absolute)**  
+  Shows the current number of SMS requests that actively being processed by different front-end versions.
+
+- **Request Rate (Relative)**  
+  Displays the per-second rate of incoming SMS requests over time, broken down by frontend version.
+
+- **Total Requests (Absolute)**  
+  Tracks the total number of SMS requests grouped by version.
+
+- **Spam vs Ham Rate (Relative)**  
+  Shows the classification rate of SMS messages as spam or ham over time among different application versions.
+
+- **SMS Input Length Distribution (Absolute)**  
+  Visualizes the SMS messages by input length buckets over the selected interval.
+
+- **SMS Input Length Distribution (Relative)**  
+  Shows the rate at which SMS messages of different input lengths are received, highlighting changes in message size patterns over time.
+#### SMS Backend Metrics Overview
+
+- **Model File Size (bytes)**  
+  Shows the size of each deployed model file in bytes, grouped by model version.
+
+- **Total Predictions per Version**  
+  Tracks the cumulative number of predictions made by each model version over time.
+
+- **P95 Prediction Latency**  
+  Displays the 95th percentile of model prediction latency over time for each version.
+
+- **Shadow Consistency Ratio**  
+  Compares the number of predictions made by the shadow model (v3) against the combined predictions of models stable (v1) and canary (v2), used to validate shadow traffic alignment.
+#### A4 Continuous Experimentation – UI Engagement Test Metrics
+
+- **Request Rate per Version (Key Metric)**  
+  Shows the per-second request rate for v1 and v2; v2 should exceed v1 despite receiving only 10% of traffic if the new UI drives higher per-user engagement.
+
+- **Engagement Multiplier**  
+  Normalizes request rates by traffic allocation to estimate per-user engagement, where values greater than 1 indicate v2 users are more engaged than v1 users.
+
+- **Decision Recommendation**  
+  Provides an automated accept/reject recommendation based on the engagement multiplier, translating the metric into a decision.
+
+- **Ham vs Spam Classification Rate**  
+  Compares spam and ham classification rates between versions to ensure the UI change does not introduce unintended changes in model behavior.
+
+- **Total Requests per Version (Cumulative)**  
+  Displays cumulative request volume over time for each version, helping visualize whether v2 overtakes v1 as engagement increases.
+
+- **P95 Latency per Version (Safety Metric)**  
+  Tracks the 95th percentile frontend request latency for each version to confirm that the new UI does not degrade performance.
+
 
 ## 9. Deployment Diagrams
 
