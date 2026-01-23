@@ -158,9 +158,9 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "priyansh.rajusth@gmail.com"
-      from: "priyansh.rajusth@gmail.com"
-      username: "priyansh.rajusth@gmail.com"
+      to: "gandhivedant01@gmail.com"
+      from: "gandhivedant01@gmail.com"
+      username: "gandhivedant01@gmail.com"
       password: "PLACEHOLDER_SET_WITH_HELM_INSTALL"  
       # password: must be provided via --set monitoring.alerts.email.password="your-gmail-app-password"
       secretName: sms-secrets  # ← Name of the Secret to create
@@ -173,8 +173,19 @@ monitoring:
 kube-prometheus-stack:
   fullnameOverride: sms-monitor
   
+  # ------------------------------------------------
+  # 1. Prometheus Configuration
+  # ------------------------------------------------
   prometheus:
     enabled: true
+    # Enable Ingress for access via prometheus.local
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.local
+      paths:
+        - /
     prometheusSpec:
       # Only scrape ServiceMonitors with matching label
       serviceMonitorSelector:
@@ -185,18 +196,40 @@ kube-prometheus-stack:
         matchLabels:
           release: sms-monitor
     
+  # ------------------------------------------------
+  # 2. AlertManager Configuration
+  # ------------------------------------------------
   alertmanager:
     enabled: true
+    # Enable Ingress for access via alertmanager.local
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.local
+      paths:
+        - /
     alertmanagerSpec:
       # Only load AlertmanagerConfigs with matching label
       alertmanagerConfigSelector:
         matchLabels:
           release: sms-monitor
 
+  # ------------------------------------------------
+  # 3. Grafana Configuration
+  # ------------------------------------------------
   grafana:
     enabled: true
     adminUser: admin
     adminPassword: admin123
+    
+    # Enable Ingress for access via grafana.local
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.local
+      path: /
     
     # Auto-import dashboards from ConfigMap
     sidecar:
@@ -204,4 +237,3 @@ kube-prometheus-stack:
         enabled: true
         label: grafana_dashboard
         searchNamespace: default
-
