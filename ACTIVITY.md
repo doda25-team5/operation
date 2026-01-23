@@ -157,6 +157,7 @@ Worked on the deployment documentation doc, specifically explaining our Kubernet
 
 #### Priyansh: 
 
-#### Vedant: 
+#### Vedant: https://github.com/doda25-team5/operation/pull/38
+Worked on updating the values.yaml to ensure we can access prometheus, grafana dashboards without portforwarding. Will also be contributing to the deployment.md by implementing the Kaili Diagram. 
 
 #### Maja: 
