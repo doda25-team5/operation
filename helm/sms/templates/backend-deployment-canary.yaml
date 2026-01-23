@@ -1,3 +1,4 @@
+{{- if .Values.istio.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,3 +48,5 @@ spec:
           volumeMounts:
             - name: model-data
               mountPath: {{ .Values.backend.storage.mountPath | quote }}
+
+{{- end }}

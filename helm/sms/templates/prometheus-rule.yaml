@@ -2,21 +2,26 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: sms-backend-rules
-  namespace: {{ .Values.namespaces.monitoring }} 
+  name: sms-frontend-rules
+  namespace: default
   labels:
     release: {{ .Values.monitoring.prometheusRelease }}
 spec:
   groups:
-  - name: sms.rules
+  - name: sms.frontend.rules
     rules:
-    - alert: HighRequestRate
-      expr: increase(sms_requests_total[1m]) > 15
-      for: 1m
+    - alert: HighFrontendRequestRate
+      expr: |
+        sum by (version) (
+          rate(sms_requests_total[2m])
+        ) > 0.25
+      for: 2m
       labels:
         severity: warning
-        namespace: {{ .Values.namespaces.monitoring }}
+        namespace: default
       annotations:
-        summary: "High request rate on SMS frontend"
-        description: "More than ~15 requests/min for 1 minutes"
+        summary: "High request rate on SMS frontend ({{`{{`}} $labels.version {{`}}`}})"
+        description: |
+          Frontend version {{`{{`}} $labels.version {{`}}`}} is receiving
+          more than ~15 requests per minute for 2 minutes.
 {{- end }}

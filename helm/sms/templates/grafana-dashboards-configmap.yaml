@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sms-grafana-dashboards
-  namespace: {{ .Values.namespaces.monitoring }}
+  namespace: default
   labels:
     grafana_dashboard: "1"
 data:
