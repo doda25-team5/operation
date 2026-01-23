@@ -1,6 +1,6 @@
 # Deployment Overview
 
-This document describes the final deployment structure of the SMS application and explains how requests flow through the system. The goal is to clarify the project setup to an outsider (e.g., a new team member), such that they can understand the overall design and meaningfully participate in architectural and experimental design discussions.
+This document describes the final deployment structure of the SMS application and explains how requests flow through the system. The goal is to clarify the project setup to an outsider (e.g., a new team member), such that they can understand the overall design and participate in architectural and experimental design discussions.
 
 The documentation focuses on the conceptual deployment structure at the Kubernetes and Istio level. 
 
@@ -80,100 +80,154 @@ The application exposes metrics that describe its runtime behavior, such as requ
 
 ## 4. Kubernetes and Istio Resources and Their Roles
 
-This section describes the Kubernetes and Istio resource types used in the deployment and explains how each contributes to the overall system design.
+This section describes all Kubernetes and Istio resources that make up the SMS deployment.  
+For each resource type, we first explain its **role in the system**, followed by a **concrete overview of how it is instantiated in our deployment**.
+
+The goal is to clarify *what exists*, *why it exists*, and *how it contributes to request handling and experimentation*.
 
 ### 4.1 Deployments
 
-Kubernetes Deployments are used to manage application workloads.
+Kubernetes Deployments are used to manage application workloads and ensure reliable execution of frontend and backend services.
 
-- Separate Deployments exist for the frontend and backend services
-- The frontend is deployed in multiple versions (e.g., stable and canary)
-- Deployments manage replica scaling and pod lifecycle
+In our deployment:
+- Separate Deployments exist for the frontend and backend
+- Multiple versions of the frontend (stable and canary) are deployed simultaneously
+- Deployments manage pod replicas, updates, and lifecycle
+
+**Frontend Deployments**
+- **Stable frontend:** `sms-frontend`  
+  Labels: `app: sms-frontend`, `version: v1`
+- **Canary frontend:** `sms-frontend-canary`  
+  Labels: `app: sms-frontend`, `version: v2`
+
+**Backend Deployments**
+- **Stable backend:** `sms-backend`  
+  Labels: `app: sms-backend`, `version: v1`
+- **Canary backend:** `sms-backend-canary`  
+  Labels: `app: sms-backend`, `version: v2`
+
+Version labels are later used by Istio to perform version-aware routing.
 
 ### 4.2 Services
 
-Kubernetes Services provide stable network identities and load balancing for pods.
+Kubernetes Services provide stable network identities and load balancing over pods managed by Deployments.
 
-- **Frontend Service (`sms-frontend-svc`)**
-  - Exposes the frontend application on an internal cluster port
-  - Load balances traffic across frontend pods
+They decouple service discovery from pod lifecycle and are the main abstraction used by Istio for traffic routing.
 
-- **Backend Service (`sms-backend-svc`)**
-  - Exposes the backend application internally
-  - Is only accessible from within the cluster
+**Frontend Service**
+- **Service:** `sms-frontend-svc`
+- Port: `8080`
+- Selector: `app: sms-frontend`
+- Role:
+  - Exposes the frontend internally within the cluster
+  - Load balances traffic across stable and canary frontend pods
+
+**Backend Service**
+- **Service:** `sms-backend-svc`
+- Port: `8081`
+- Selector: `app: sms-backend`
+- Role:
+  - Exposes the backend internally
+  - Only accessible from within the cluster (primarily by the frontend)
 
 ### 4.3 Istio Gateway
 
-An Istio Gateway defines how external traffic enters the service mesh.
+The Istio Gateway defines how external traffic enters the service mesh.
 
-- The gateway listens for incoming HTTP traffic on port 80
-- It serves as the external entry point for all user requests
-- Traffic is forwarded from the gateway to the appropriate VirtualService for routing decisions
+In this deployment:
+- The gateway listens for HTTP traffic on port 80
+- It serves as the single external entry point into the cluster
+- It forwards traffic into the mesh for further routing decisions
 
-### 4.4 Istio VirtualService
+**Gateway Resource**
+- **Gateway:** `sms-gateway`
+- Accepts HTTP traffic on port 80
+- Matches all hosts
+- Selects the Istio ingress gateway using the label `istio: ingressgateway`
 
-The VirtualService is responsible for all application-level routing decisions. It defines:
+The Gateway itself does not perform routing; it only admits traffic into the mesh.
 
-- Host-based routing (e.g., forcing traffic to stable or canary versions)
+### 4.4 Istio VirtualServices
+
+Istio VirtualServices define **how requests are routed once they are inside the service mesh**.  
+They are the central component for implementing dynamic routing and experimentation logic.
+
+#### Frontend VirtualService
+
+- **VirtualService:** `sms-frontend`
+- Role:
+  - Routes external traffic to the frontend service
+  - Implements all routing logic for experimentation
+
+Routing capabilities include:
+- Host-based routing (e.g., forcing stable or canary versions for grading/debugging)
 - Cookie-based routing for sticky sessions
 - Traffic splitting for canary experiments (e.g., 90/10 split)
 - Traffic mirroring for shadow experiments
 
-Routing decisions are applied per request as traffic flows through the service mesh.
+All routing decisions for incoming user traffic are taken at this VirtualService.
 
-### 4.5 Istio DestinationRule
+#### Backend VirtualService
 
-DestinationRules define subsets of services that correspond to different application versions.
+- **VirtualService:** `sms-backend`
+- Role:
+  - Routes requests from frontend v1/v2 to corresponding backend versions
+  - Enables backend versioning consistency during experiments
 
-- Frontend subsets represent stable and canary versions
-- Subsets are selected by the VirtualService during routing
-- DestinationRules enable version-aware traffic management
+### 4.5 Istio DestinationRules
 
-### 4.6 ServiceMonitors
+DestinationRules define **subsets of a service**, typically corresponding to different versions of an application.
 
-ServiceMonitors are used to integrate application services with Prometheus.
+They enable version-aware routing when combined with VirtualServices.
 
-- They define which services expose metrics
-- They specify how Prometheus discovers and scrapes metrics endpoints
-- This enables consistent monitoring across application versions
+**Frontend DestinationRule**
+- **DestinationRule:** `sms-frontend`
+- Subsets:
+  - `stable` -> `version: v1`
+  - `canary` -> `version: v2`
 
----
+**Backend DestinationRule**
+- **DestinationRule:** `sms-backend`
+- Subsets:
+  - `stable` -> `version: v1`
+  - `canary` -> `version: v2`
 
-## 4a. Kubernetes and Istio Resources Details
+VirtualServices select these subsets to route traffic to specific versions.
 
-This section provides a concise summary of all resource names, labels, ports, and selectors as defined in the Helm chart templates and values.yaml for the deployment of the SMS application.
+### 4.6 Configuration Resources
 
-### Frontend Resources
+Configuration is externalized using ConfigMaps to decouple configuration from container images.
 
-- **Deployment (Stable):** `sms-frontend` (app: sms-frontend, version: v1)
-- **Deployment (Canary):** `sms-frontend-canary` (app: sms-frontend, version: v2)
-- **Service:** `sms-frontend-svc` (port 8080, selector: app: sms-frontend)
-- **VirtualService:** `sms-frontend` (routes external traffic to frontend service, supports host-based, cookie-based, canary, and shadow routing)
-- **DestinationRule:** `sms-frontend` (subsets: stable [version: v1], canary [version: v2])
-- **ConfigMap:** `sms-frontend-config` (contains backend host, port, image tag)
+- **Frontend ConfigMap:** `sms-frontend-config`
+  - Contains backend host, backend port, and image-related configuration
 
-### Backend Resources
+- **Backend ConfigMap:** `sms-backend-config`
+  - Contains model and preprocessing configuration
 
-- **Deployment (Stable):** `sms-backend` (app: sms-backend, version: v1)
-- **Deployment (Canary):** `sms-backend-canary` (app: sms-backend, version: v2)
-- **Service:** `sms-backend-svc` (port 8081, selector: app: sms-backend)
-- **VirtualService:** `sms-backend` (routes requests from frontend v1/v2 to backend v1/v2)
-- **DestinationRule:** `sms-backend` (subsets: stable [version: v1], canary [version: v2])
-- **ConfigMap:** `sms-backend-config` (contains model and preprocessor config)
+### 4.7 Monitoring and Observability Resources
 
-### Ingress and Traffic Management
+Observability is integrated using Prometheus-compatible resources.
 
-- **Gateway:** `sms-gateway` (accepts HTTP traffic on port 80 for all hosts, selector: istio: ingressgateway)
-- **(Optional) Ingress:** `sms-frontend-ingress` (if enabled, for NGINX ingress)
+- **ServiceMonitor:** `sms-frontend-sm`
+  - Enables Prometheus to scrape frontend metrics
+  - Matches services with label `app: sms-frontend`
 
-### Monitoring and Observability
+- **PrometheusRule:** `sms-backend-rules`
+  - Defines alerting rules for backend behavior
 
-- **ServiceMonitor:** `sms-frontend-sm` (for Prometheus, matches app: sms-frontend)
-- **PrometheusRule:** `sms-backend-rules` (alerting rules for backend)
-- **AlertmanagerConfig:** `sms-alerts` (email alerting, in monitoring namespace)
+- **AlertmanagerConfig:** `sms-alerts`
+  - Configures alert delivery (e.g., email notifications)
+  - Deployed in the monitoring namespace
+
 - **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
+  - Provides predefined dashboards for visualizing metrics
+  - Used to compare stable and canary behavior during experiments
 
----
+### 4.8 Optional and Supporting Resources
+
+- **Optional Ingress:** `sms-frontend-ingress`
+  - Used only if NGINX ingress is enabled
+  - Not part of the default Istio-based request path
 
 ## 5. External Access Model
 
