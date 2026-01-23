@@ -139,9 +139,9 @@ ServiceMonitors are used to integrate application services with Prometheus.
 
 ---
 
-## 4a. Concrete Kubernetes and Istio Resources
+## 4a. Kubernetes and Istio Resources Details
 
-This section lists the actual Kubernetes and Istio resources deployed for the SMS application, as defined in the Helm chart (`operation/helm/sms/templates/`).
+This section provides a concise summary of all resource names, labels, ports, and selectors as defined in the Helm chart templates and values.yaml for the deployment of the SMS application.
 
 ### Frontend Resources
 
@@ -171,9 +171,9 @@ This section lists the actual Kubernetes and Istio resources deployed for the SM
 - **ServiceMonitor:** `sms-frontend-sm` (for Prometheus, matches app: sms-frontend)
 - **PrometheusRule:** `sms-backend-rules` (alerting rules for backend)
 - **AlertmanagerConfig:** `sms-alerts` (email alerting, in monitoring namespace)
--- **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
+- **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
 
-This section provides a concise summary of all resource names, labels, ports, and selectors as defined in the Helm chart templates and values.yaml for this deployment.
+---
 
 ## 5. External Access Model
 
