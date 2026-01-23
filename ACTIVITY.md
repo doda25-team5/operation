@@ -144,3 +144,18 @@ I worked on getting assignment 1 to excellent criteria by working on F11: Automa
 
 #### Maja: https://github.com/doda25-team5/operation/pull/29
 This week I worked on beautifying A2 readme and making sure we fulfill the 'excellent' marks. inventory.cfg is created and updated as we run vagrant up to track the ansible hosts. I added regexp-based replacement in general.yaml and verified if its idempotent. Verified TLS certificate and key are provided (not auto-generated).
+
+## WEEK 9 - All Assignments
+
+#### Erkin: 
+
+#### Jayran: 
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/35
+Worked on the deployment documentation doc, specifically explaining our Kubernetes and Istio resources.
+
+#### Priyansh: 
+
+#### Vedant: 
+
+#### Maja: 
