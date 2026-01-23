@@ -1,3 +1,4 @@
+{{- if .Values.istio.enabled }}
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
@@ -37,7 +38,7 @@ spec:
 
     # -------------------------------
     # Cookie-based persistence
-    # -------------------------    # -------------------------------------
+    # -------------------------------
     - match:
         - headers:
             cookie:
@@ -104,3 +105,5 @@ spec:
           set:
             version: "v1"
     {{- end }}
+    
+{{- end }}

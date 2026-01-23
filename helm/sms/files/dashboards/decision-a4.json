@@ -1,6 +1,7 @@
 {
   "uid": "sms-a4-experiment",
-  "title": "SMS A4 Experiment Dashboard",
+  "title": "A4 Continuous Experimentation - UI Engagement Test",
+  "description": "Experiment: Does the new UI (v2 canary) increase user engagement compared to stable (v1)? Hypothesis: Users who see the prettier v2 UI will send more requests per session than v1 users.",
   "schemaVersion": 39,
   "timezone": "browser",
   "refresh": "5s",
@@ -17,30 +18,183 @@
   },
   "panels": [
     {
-      "type": "timeseries",
-      "title": "User Engagement (Request Rate)",
-      "description": "Hypothesis: Better UI leads to higher interaction frequency. Canary (v2) should show higher RPS than Stable (v1).",
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
-      "targets": [
-        {
-          "expr": "rate(sms_requests_total[$interval])",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ]
+      "type": "text",
+      "title": "Experiment Overview",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
+      "options": {
+        "content": "## 🧪 Experiment: UI Engagement Test\n\n**Hypothesis:** The new UI (Canary v2) is more engaging and causes users to interact more frequently.\n\n**Setup:**\n- **Traffic Split:** 90% users see Stable (v1), 10% see Canary (v2)\n- **Expected Behavior:** Even though v2 has fewer users (10%), those users should generate MORE total requests if the UI is more engaging\n\n**Decision Criteria:**\n- ✅ **Accept v2** if: Request rate for v2 > Request rate for v1 (despite having 90% fewer users)\n- ❌ **Reject v2** if: Request rate similar or lower (UI doesn't increase engagement)\n\n**Interpretation:**\n- If v2 RPS > v1 RPS → v2 users are ~9x more engaged per user → **Hypothesis confirmed**\n- If v2 RPS ≈ v1 RPS → Engagement similar → **Hypothesis rejected**\n- If v2 RPS < v1 RPS → v2 actually reduces engagement → **Hypothesis strongly rejected**",
+        "mode": "markdown"
+      }
     },
     {
       "type": "timeseries",
-      "title": "P95 Latency (Safety Metric)",
-      "description": "Canary must not increase tail latency.",
-      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 10 },
+      "title": "Request Rate per Version (KEY METRIC)",
+      "description": "Canary (v2) should show HIGHER RPS than Stable (v1) if users are more engaged. Remember: v2 only has 10% of users, so higher RPS means much higher per-user engagement.",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 10 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, pod)(rate(frontend_request_latency_seconds_bucket[$interval])))",
-          "legendFormat": "{{pod}}",
+          "expr": "sum by (version) (rate(sms_requests_total[$interval]))",
+          "legendFormat": "{{version}} Request Rate",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "v1 Request Rate" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "v2 Request Rate" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Engagement Multiplier",
+      "description": "How many times more engaged are v2 users compared to v1 users? Calculated as: (v2 RPS / 0.1) / (v1 RPS / 0.9). Values > 1 mean v2 users are more engaged.",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "(sum(rate(sms_requests_total{version=\"v2\"}[$interval])) / 0.1) / (sum(rate(sms_requests_total{version=\"v1\"}[$interval])) / 0.9)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 0.8, "color": "yellow" },
+              { "value": 1.2, "color": "green" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Decision Recommendation",
+      "description": "Automated recommendation based on engagement multiplier. > 1.5 = Strong Accept, 1.0-1.5 = Accept, 0.8-1.0 = Neutral, < 0.8 = Reject",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "(sum(rate(sms_requests_total{version=\"v2\"}[$interval])) / 0.1) / (sum(rate(sms_requests_total{version=\"v1\"}[$interval])) / 0.9)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "range", "options": { "from": 0, "to": 0.8, "result": { "text": "❌ REJECT - Lower Engagement" } } },
+            { "type": "range", "options": { "from": 0.8, "to": 1.0, "result": { "text": "⚠️ NEUTRAL - Similar Engagement" } } },
+            { "type": "range", "options": { "from": 1.0, "to": 1.5, "result": { "text": "✅ ACCEPT - Higher Engagement" } } },
+            { "type": "range", "options": { "from": 1.5, "to": 100, "result": { "text": "✅✅ STRONG ACCEPT - Much Higher Engagement" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 0.8, "color": "yellow" },
+              { "value": 1.0, "color": "light-green" },
+              { "value": 1.5, "color": "green" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "name",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Ham vs Spam Classification Rate",
+      "description": "Classification results by version. Verify both versions classify messages similarly (no regression in model behavior).",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (version, category) (rate(sms_prediction_result_total[$interval]))",
+          "legendFormat": "{{version}} - {{category}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Total Requests per Version (Cumulative)",
+      "description": "Absolute cumulative request counts. Shows total volume over time. v2 should overtake v1 if engagement hypothesis is correct.",
+      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "expr": "sum by (version) (sms_requests_total)",
+          "legendFormat": "{{version}} Total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "P95 Latency per Version (Safety Metric)",
+      "description": "Verify new UI doesn't degrade performance. Both versions should have similar latency.",
+      "gridPos": { "x": 0, "y": 38, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (version, le) (rate(frontend_request_latency_seconds_bucket[$interval])))",
+          "legendFormat": "p95 {{version}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      }
     }
   ],
   "time": { "from": "now-15m", "to": "now" }

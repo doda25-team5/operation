@@ -1,3 +1,4 @@
+{{- if .Values.istio.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,3 +10,4 @@ data:
   MODEL_URL: {{ .Values.backend.model.shadow.url | quote }}
   PREPROCESSOR_URL: {{ .Values.backend.model.shadow.preprocessorUrl | quote }}
   MODEL_PORT: "{{ .Values.backend.service.port }}"
+{{- end }}
