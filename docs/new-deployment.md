@@ -139,6 +139,42 @@ ServiceMonitors are used to integrate application services with Prometheus.
 
 ---
 
+## 4a. Kubernetes and Istio Resources Details
+
+This section provides a concise summary of all resource names, labels, ports, and selectors as defined in the Helm chart templates and values.yaml for the deployment of the SMS application.
+
+### Frontend Resources
+
+- **Deployment (Stable):** `sms-frontend` (app: sms-frontend, version: v1)
+- **Deployment (Canary):** `sms-frontend-canary` (app: sms-frontend, version: v2)
+- **Service:** `sms-frontend-svc` (port 8080, selector: app: sms-frontend)
+- **VirtualService:** `sms-frontend` (routes external traffic to frontend service, supports host-based, cookie-based, canary, and shadow routing)
+- **DestinationRule:** `sms-frontend` (subsets: stable [version: v1], canary [version: v2])
+- **ConfigMap:** `sms-frontend-config` (contains backend host, port, image tag)
+
+### Backend Resources
+
+- **Deployment (Stable):** `sms-backend` (app: sms-backend, version: v1)
+- **Deployment (Canary):** `sms-backend-canary` (app: sms-backend, version: v2)
+- **Service:** `sms-backend-svc` (port 8081, selector: app: sms-backend)
+- **VirtualService:** `sms-backend` (routes requests from frontend v1/v2 to backend v1/v2)
+- **DestinationRule:** `sms-backend` (subsets: stable [version: v1], canary [version: v2])
+- **ConfigMap:** `sms-backend-config` (contains model and preprocessor config)
+
+### Ingress and Traffic Management
+
+- **Gateway:** `sms-gateway` (accepts HTTP traffic on port 80 for all hosts, selector: istio: ingressgateway)
+- **(Optional) Ingress:** `sms-frontend-ingress` (if enabled, for NGINX ingress)
+
+### Monitoring and Observability
+
+- **ServiceMonitor:** `sms-frontend-sm` (for Prometheus, matches app: sms-frontend)
+- **PrometheusRule:** `sms-backend-rules` (alerting rules for backend)
+- **AlertmanagerConfig:** `sms-alerts` (email alerting, in monitoring namespace)
+- **Grafana Dashboards ConfigMap:** `sms-grafana-dashboards`
+
+---
+
 ## 5. External Access Model
 
 External users access the application through the Istio IngressGateway.
