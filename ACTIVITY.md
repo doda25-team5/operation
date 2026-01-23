@@ -149,7 +149,8 @@ This week I worked on beautifying A2 readme and making sure we fulfill the 'exce
 
 #### Erkin: 
 
-#### Jayran: 
+#### Jayran: https://github.com/doda25-team5/operation/pull/37
+Worked on the new refined new-deployment.md document. Refined some work done from the previousn deployment and made a new diagram for section 5 (how to access the cluster from the outside). 
 
 #### Nicolas: https://github.com/doda25-team5/operation/pull/35
 Worked on the deployment documentation doc, specifically explaining our Kubernetes and Istio resources.
