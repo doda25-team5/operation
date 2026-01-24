@@ -36,8 +36,8 @@ frontend:
   name: sms-frontend
 
   # Replica configuration
-  replicas: 1        # Stable version (v1)
-  canaryReplicas: 1   # Canary version (v2)
+  replicas: 3         # Stable version (v1)
+  canaryReplicas: 2   # Canary version (v2)
 
   # Container images
   image:

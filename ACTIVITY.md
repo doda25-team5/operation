@@ -127,16 +127,38 @@ Worked on improving the A2 Readme for the final presentation. For A4 I improved 
 
 ## WEEK 8 - All Assignments
 
-#### Erkin: 
+#### Erkin: https://github.com/doda25-team5/model-service/pull/11
+This week i first try to install helm chart on the kubernetes cluster that we created in assignment 2 and managed to to it. Afterwards i looked at the all assignments and identified what was missing. Finally, i created a stable and pre release workflows for the model-service repository and fulfilled the missing criteria that we were missing.
 
-#### Jayran:  
+#### Jayran: https://github.com/doda25-team5/operation/pull/31
+Continued working on the deployment documentation. Made a sample deployment diagram but need to figure out how much more in depth i want to go also networking wise. 
 
 #### Nicolas: https://github.com/doda25-team5/operation/pull/25
 Continued with the work from last week and improved the extension proposal to fulfill the 'excellent' marks.
 
-#### Priyansh: 
+#### Priyansh: https://github.com/doda25-team5/operation/pull/32
+This week, I had opened a PR on Thursday, which I then had to close since the implemented changes were a misunderstanding on my end. To compensate for the lack of meaningful work, I decided to work on further modularity of values.yaml, and now each backend image can be configured separately with their own environment variables and configmaps. Moreover, although https://github.com/doda25-team5/app/pull/12 is technically a PR which I worked on to add release and prerelease workflows to app, it's not a complete reflection of what I have done for the App repository. With my changes, the app repository is finally properly versioned in the POM.xml with the correct stable-release workflow and automatic version bumping without manual git tagging. This is reflected in my PR for the operation repository in values.yaml, where the stableTag and canaryTag for frontend correspond to the respective automatically released image versions. Another key task that I carried out was addressing the fact that our canary experiment changes had propogated to main, which I have since reverted so that the 'older' UI is reflected on main branch in the app repo, and the 'newer' UI is reflected in a branch called feature-new-ui, thereby also explaining the corresponding stableTag and canaryTag used in values.yaml.
 
-#### Vedant: 
+#### Vedant: https://github.com/doda25-team5/lib-version/pull/3
+I worked on getting assignment 1 to excellent criteria by working on F11: Automatic versioning. Initially, our release and pre-release files were not configured correctly which has now been fixed. 
 
 #### Maja: https://github.com/doda25-team5/operation/pull/29
 This week I worked on beautifying A2 readme and making sure we fulfill the 'excellent' marks. inventory.cfg is created and updated as we run vagrant up to track the ansible hosts. I added regexp-based replacement in general.yaml and verified if its idempotent. Verified TLS certificate and key are provided (not auto-generated).
+
+## WEEK 9 - All Assignments
+
+#### Erkin: 
+
+#### Jayran: https://github.com/doda25-team5/operation/pull/37
+Worked on the new refined new-deployment.md document. Refined some work done from the previousn deployment and made a new diagram for section 5 (how to access the cluster from the outside). 
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/35
+Worked on the deployment documentation doc, specifically explaining our Kubernetes and Istio resources.
+
+#### Priyansh: https://github.com/doda25-team5/operation/pull/34 https://github.com/doda25-team5/operation/pull/32
+
+#### Vedant: https://github.com/doda25-team5/operation/pull/38
+Worked on updating the values.yaml to ensure we can access prometheus, grafana dashboards without portforwarding. Will also be contributing to the deployment.md by implementing the Kaili Diagram. 
+
+#### Maja: https://github.com/doda25-team5/operation/pull/39 https://github.com/doda25-team5/lib-version/pull/4
+Worked on finalizing the project. Applied some fixes to version library and added improved documentation and new dashboard for the experiments. Together we worked on creating the slides for the presentation and ensuring the readmes are correct.
