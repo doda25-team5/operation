@@ -288,6 +288,8 @@ open http://localhost:3000
 
 ### 6.1 Dashboard Visualization
 
+The resulting dashboard should look like in the following screenshots to verify H₁:
+
 ![Experiment Dashboard - Overview](./images/1.jpeg)
 
 ![Engagement Metrics](./images/2.jpeg)
