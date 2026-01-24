@@ -19,35 +19,14 @@ The deployment uses Kubernetes as the orchestration platform and Istio as the se
 
 ## 2. Deployed Namespaces
 
-### 2.1 Application Namespace (`sms`)
-
-All application-related resources are deployed into the `sms` namespace. This namespace contains:
+All application and monitoring related resources are deployed into the `default` namespace. This namespace contains:
 
 - Frontend and backend Deployments
 - Kubernetes Services exposing these Deployments
 - Istio traffic management resources (Gateway, VirtualServices, DestinationRules)
 - Observability-related resources such as ServiceMonitors
-
-This namespace represents the complete application deployment and is the primary focus of this document.
-
-### 2.2 Monitoring Namespace (`monitoring`) -- MIGHT NEED TO CHANGE
-
-Observability components are deployed into a separate `monitoring` namespace. This namespace contains:
-
 - Prometheus for metrics collection
 - Grafana for metrics visualization
-
-Prometheus scrapes metrics exposed by application services in the `sms` namespace, while Grafana dashboards are used to analyze system behavior and compare experimental results.
-
-### 2.3 Supporting System Namespaces
-
-Additional namespaces exist to support cluster operation, such as:
-
-- Istio control plane namespaces
-- Kubernetes system namespaces
-
-These namespaces are required for cluster functionality but are not part of the application deployment itself 
-
 ---
 
 ## 3. Application-Level Components (Logical View)
@@ -61,6 +40,12 @@ The frontend is the user-facing component of the application. It:
 - Handles incoming HTTP requests from external users
 - Serves the application user interface
 - Communicates with the backend service for model predictions
+
+#### Available endpoints
+- `/metrics` - for accessing front-end metrics
+- `/sms` - for accessing the application
+- `/lib-version` - for accessing the lib-version number
+
 
 Multiple versions of the frontend (stable and canary) may be deployed simultaneously for experimentation purposes.
 
@@ -418,6 +403,8 @@ In the baseline scenario, no experimentation is active and all traffic is routed
 
 ### 6.2 Canary Experiment Request Flow (90/10 Split)
 
+![alt text](./images/requestflow.drawio.png)
+
 In the canary experiment, traffic is split between stable and canary frontend versions to evaluate new behavior under real user traffic.
 
 1. **Request Entry**  
@@ -490,6 +477,7 @@ The deployment supports continuous experimentation through canary and shadow dep
 ---
 
 ## 8. Monitoring Visualization and Metrics Flow
+![alt text](./images/monitoring.png)
 
 Metrics flow through the system as follows:
 
