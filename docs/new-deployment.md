@@ -156,7 +156,7 @@ All routing decisions for incoming user traffic are taken at this VirtualService
 
 - **VirtualService:** `sms-backend`
 - Role:
-  - Routes requests from frontend v1/v2 to corresponding backend versions
+  - Routes requests from frontend v1/v2 to corresponding backend versions with source labels
   - Enables backend versioning consistency during experiments
 
 ### 4.5 Istio DestinationRules
@@ -217,7 +217,13 @@ Separate ConfigMaps are required because:
 
 This design enables backend experimentation without affecting the stable backend or requiring image rebuilds.
 
----
+#### Secrets
+
+Sensitive configuration is handled using  Secrets to prevent credentials from being exposed in container images or configuration files.
+
+- **Secret:** `sms-secrets`
+
+This Secret stores the Gmail app password required by Alertmanager to send notification emails. It is injected into the Alertmanager component at runtime, ensuring secure handling of sensitive data.
 
 ### 4.7 Monitoring Resources
 
