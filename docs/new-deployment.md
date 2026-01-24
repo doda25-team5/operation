@@ -341,9 +341,9 @@ It includes metrics such as:
 The **Continuous Experimentation Dashboard** is specifically designed for the support and evaluation of the frontend canary experiment.
 
 It visualizes the experiment hypothesis:
-
 > *Does the new frontend UI (v2 canary) increase user engagement compared to the stable version (v1)?*
-
+> 
+![alt text](./images/1.jpeg)
 Key metrics and visualizations include:
 - **Request rate per version (key metric)**  
   (counter → rate), based on `sms_requests_total`
