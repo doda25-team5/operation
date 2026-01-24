@@ -370,7 +370,39 @@ Key metrics and visualizations include:
   - Used only if NGINX ingress is enabled
   - Not part of the default Istio-based request path
 
-## 5. External Access Model
+## 5. Configurable Values
+
+These are the key configurable values in `values.yml` that can be adjusted during deployment:
+
+**Deployment Mode**  
+- `istio.enabled` → enable Istio mesh (true/false)  
+- `ingress.enabled` → enable NGINX ingress (true/false)  
+
+**Frontend**  
+- `replicas` → number of stable pods  
+- `canaryReplicas` → number of canary pods  
+- `image.repository` / `image.stableTag` / `image.canaryTag` → container images and versions  
+- `service.port` → service port  
+- `config.backendHost` / `config.backendPort` → backend connection  
+
+**Backend**  
+- `replicas` → stable pods  
+- `canaryReplicas` → canary pods  
+- `shadow.enabled` → enable shadow deployment  
+- `shadow.replicas` → shadow pods  
+- `image.repository` / `image.stableTag` / `image.canaryTag` / `image.shadowTag` → container images and versions  
+- `service.port` → service port 
+
+**Traffic Management**  
+- `traffic.mode` → `standard` = 100% stable, `canary` = split traffic  
+
+**Monitoring & Alerts**  
+- `monitoring.enabled` → enable Prometheus/Grafana/AlertManager  
+- `alerts.email.enabled` → enable email alerts  
+- `alerts.email.to` → recipient email
+
+
+## 6. External Access Model
 
 External users access the application through the Istio IngressGateway.
 
@@ -385,12 +417,12 @@ This access model provides a controlled entry point into the cluster.
 
 ---
 
-## 6. Request Flow Through the Cluster
+## 7. Request Flow Through the Cluster
 
 This section explains how requests progress through the cluster under different routing scenarios.  
 Each flow describes how Kubernetes and Istio resources interact to route traffic from external users to application pods, and how routing decisions are applied during experimentation.
 
-### 6.1 Baseline Request Flow (Stable Only)
+### 7.1 Baseline Request Flow (Stable Only)
 
 In the baseline scenario, no experimentation is active and all traffic is routed to the stable frontend version.
 
@@ -424,7 +456,7 @@ In the baseline scenario, no experimentation is active and all traffic is routed
    The backend returns the prediction to the frontend, which generates the final response.  
    The response is sent back through the service mesh and returned to the user via the IngressGateway.
 
-### 6.2 Canary Experiment Request Flow (90/10 Split)
+### 7.2 Canary Experiment Request Flow (90/10 Split)
 
 ![alt text](./images/requestflow.drawio.png)
 
@@ -458,7 +490,7 @@ In the canary experiment, traffic is split between stable and canary frontend ve
 7. **Response Delivery**  
    Responses are returned to the user through the IngressGateway, with users consistently interacting with a single frontend version across requests.
 
-### 6.3 Shadow Experiment Request Flow
+### 7.3 Shadow Experiment Request Flow
 
 Shadow experiments allow evaluation of new versions without exposing them to users.
 
@@ -489,7 +521,7 @@ Shadowing enables safe validation of new frontend behavior and performance chara
 
 ---
 
-## 7. Continuous Experimentation Design
+## 8. Continuous Experimentation Design
 
 The deployment supports continuous experimentation through canary and shadow deployments.
 
@@ -499,7 +531,7 @@ The deployment supports continuous experimentation through canary and shadow dep
 
 ---
 
-## 8. Monitoring Visualization and Metrics Flow
+## 9. Monitoring Visualization and Metrics Flow
 ![alt text](./images/monitoring.png)
 
 Metrics flow through the system as follows:
@@ -513,7 +545,7 @@ This observability setup enables data-driven evaluation of deployment changes.
 
 ---
 
-## 9. Summary for New Team Members
+## 10. Summary for New Team Members
 
 In summary:
 
