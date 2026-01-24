@@ -147,7 +147,8 @@ This week I worked on beautifying A2 readme and making sure we fulfill the 'exce
 
 ## WEEK 9 - All Assignments
 
-#### Erkin: 
+#### Erkin: https://github.com/doda25-team5/operation/pull/33 , https://github.com/doda25-team5/operation/pull/42
+Worked on deployment.md file, created the versions for grafana scrapping but since this was the incorrect version someone else did it after. Worked on the secrets for alert manager and worked on README.
 
 #### Jayran: https://github.com/doda25-team5/operation/pull/37
 Worked on the new refined new-deployment.md document. Refined some work done from the previousn deployment and made a new diagram for section 5 (how to access the cluster from the outside). 
