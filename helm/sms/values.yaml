@@ -36,8 +36,8 @@ frontend:
   name: sms-frontend
 
   # Replica configuration
-  replicas: 3         # Stable version (v1)
-  canaryReplicas: 2   # Canary version (v2)
+  replicas: 1        # Stable version (v1)
+  canaryReplicas: 1   # Canary version (v2)
 
   # Container images
   image:
@@ -105,7 +105,6 @@ backend:
       dir: "/mnt/shared/shadow"
       filename: "model.joblib"
       preprocessorFilename: "preprocessor.joblib"
-      # TODO: Change to actual shadow model URL when available
       url: "https://github.com/doda25-team5/model-service/releases/download/shadow/model.joblib"
       preprocessorUrl: "https://github.com/doda25-team5/model-service/releases/download/shadow/preprocessor.joblib"
 
@@ -150,13 +149,13 @@ ingress:
 monitoring:
   enabled: true
   
-  # Release name used for label matching
-  # MUST match kube-prometheus-stack.fullnameOverride, and all the matchLabels below
-  prometheusRelease: sms-monitor
   hosts:
     grafana: grafana.local
     prometheus: prometheus.local
     alertmanager: alertmanager.local
+  # Release name used for label matching
+  # MUST match kube-prometheus-stack.fullnameOverride, and all the matchLabels below
+  prometheusRelease: sms-monitor
 
   # Email alerting configuration
   alerts:
@@ -201,6 +200,15 @@ kube-prometheus-stack:
     enabled: true
     adminUser: admin
     adminPassword: admin123
+    
+    sidecar:
+      datasources:
+        enabled: true
+        defaultDatasourceEnabled: true
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        labelValue: "1"
 
   prometheusOperator:
     admissionWebhooks:
