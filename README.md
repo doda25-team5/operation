@@ -191,7 +191,8 @@ exit
 ```
 If ping fails, check VM network settings and ensure all VMs are running.
 ```bash
-vagrant status
+ping -c 3 node-1
+ping -c 3 node-2
 ```
 If the nodes are not running reload the VMs, this will restart the VMs and reattach the host-only network.
 ```bash

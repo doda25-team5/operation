@@ -149,6 +149,10 @@ ingress:
 monitoring:
   enabled: true
   
+  hosts:
+    grafana: grafana.local
+    prometheus: prometheus.local
+    alertmanager: alertmanager.local
   # Release name used for label matching
   # MUST match kube-prometheus-stack.fullnameOverride, and all the matchLabels below
   prometheusRelease: sms-monitor
@@ -157,9 +161,9 @@ monitoring:
   alerts:
     email:
       enabled: true
-      to: "priyansh.rajusth@gmail.com"
-      from: "priyansh.rajusth@gmail.com"
-      username: "priyansh.rajusth@gmail.com"
+      to: "gandhivedant01@gmail.com"
+      from: "gandhivedant01@gmail.com"
+      username: "gandhivedant01@gmail.com"
       password: "PLACEHOLDER_SET_WITH_HELM_INSTALL"  
       # password: must be provided via --set monitoring.alerts.email.password="your-gmail-app-password"
       secretName: sms-secrets  # ← Name of the Secret to create
