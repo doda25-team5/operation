@@ -82,8 +82,20 @@ In our deployment:
 **Frontend Deployments**
 - **Stable frontend:** `sms-frontend`  
   Labels: `app: sms-frontend`, `version: v1`
+  
+<p align="center">
+  <img src="./images/stable.png" alt="Stable version" width="800"><br>
+  <em>Stable version</em>
+</p>
+  
 - **Canary frontend:** `sms-frontend-canary`  
   Labels: `app: sms-frontend`, `version: v2`
+
+<p align="center">
+  <img src="./images/canar.png" alt="Canary version" width="800"><br>
+  <em>Canary version</em>
+</p>
+  
 
 **Backend Deployments**
 - **Stable backend:** `sms-backend`  
@@ -315,6 +327,9 @@ It visualizes frontend-specific metrics such as:
 
 The **Backend Dashboard** focuses on model-related behavior and backend performance.
 
+
+![alt text](./images/backendgrafana.png)
+
 It includes metrics such as:
 - **Total predictions per version**  
   (counter), using `model_predictions_total`
@@ -330,6 +345,8 @@ It includes metrics such as:
 ##### Continuous Experimentation Dashboard (Frontend Canary)
 
 The **Continuous Experimentation Dashboard** is specifically designed for the support and evaluation of the frontend canary experiment.
+
+![alt text](./images/frontendgrafana.png)
 
 It visualizes the experiment hypothesis:
 > *Does the new frontend UI (v2 canary) increase user engagement compared to the stable version (v1)?*
