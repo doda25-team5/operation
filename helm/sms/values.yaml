@@ -71,9 +71,9 @@ backend:
   # Container images
   image:
     repository: ghcr.io/doda25-team5/sms-backend
-    stableTag: "latest"
-    canaryTag: "1.0.8-canary-260124-205223" # TODO change for canary release
-    shadowTag: "1.0.8-shadow-260124-205126"  # Shadow launch (v3) -> TODO change for shadow release
+    stableTag: "1.0.7"
+    canaryTag: "1.0.8-canary-260124-205223" 
+    shadowTag: "1.0.8-shadow-260124-205126"  # Shadow launch (v3) 
     pullPolicy: IfNotPresent
 
   # Service configuration
