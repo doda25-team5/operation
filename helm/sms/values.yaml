@@ -49,14 +49,14 @@ frontend:
   # Service configuration
   service:
     name: sms-frontend-svc
-    port: 8084
+    port: 8080
     portName: http
     type: ClusterIP
 
   # Backend connection settings
   config:
     backendHost: sms-backend-svc
-    backendPort: 8082
+    backendPort: 8081
 
 # --------------------------------------------------
 # Backend (Model Service API)
@@ -72,14 +72,14 @@ backend:
   image:
     repository: ghcr.io/doda25-team5/sms-backend
     stableTag: "latest"
-    canaryTag: "latest" # TODO change for canary release
-    shadowTag: "latest"  # Shadow launch (v3) -> TODO change for shadow release
+    canaryTag: "1.0.8-canary-260124-205223" # TODO change for canary release
+    shadowTag: "1.0.8-shadow-260124-205126"  # Shadow launch (v3) -> TODO change for shadow release
     pullPolicy: IfNotPresent
 
   # Service configuration
   service:
     name: sms-backend-svc
-    port: 8082
+    port: 8081
     type: ClusterIP
     portName: metrics  # Exposed for Prometheus scraping
 
