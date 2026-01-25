@@ -19,35 +19,14 @@ The deployment uses Kubernetes as the orchestration platform and Istio as the se
 
 ## 2. Deployed Namespaces
 
-### 2.1 Application Namespace (`sms`)
-
-All application-related resources are deployed into the `sms` namespace. This namespace contains:
+All application and monitoring related resources are deployed into the `default` namespace. This namespace contains:
 
 - Frontend and backend Deployments
 - Kubernetes Services exposing these Deployments
 - Istio traffic management resources (Gateway, VirtualServices, DestinationRules)
 - Observability-related resources such as ServiceMonitors
-
-This namespace represents the complete application deployment and is the primary focus of this document.
-
-### 2.2 Monitoring Namespace (`monitoring`) -- MIGHT NEED TO CHANGE
-
-Observability components are deployed into a separate `monitoring` namespace. This namespace contains:
-
 - Prometheus for metrics collection
 - Grafana for metrics visualization
-
-Prometheus scrapes metrics exposed by application services in the `sms` namespace, while Grafana dashboards are used to analyze system behavior and compare experimental results.
-
-### 2.3 Supporting System Namespaces
-
-Additional namespaces exist to support cluster operation, such as:
-
-- Istio control plane namespaces
-- Kubernetes system namespaces
-
-These namespaces are required for cluster functionality but are not part of the application deployment itself 
-
 ---
 
 ## 3. Application-Level Components (Logical View)
@@ -61,6 +40,12 @@ The frontend is the user-facing component of the application. It:
 - Handles incoming HTTP requests from external users
 - Serves the application user interface
 - Communicates with the backend service for model predictions
+
+#### Available endpoints
+- `/metrics` - for accessing front-end metrics
+- `/sms` - for accessing the application
+- `/lib-version` - for accessing the lib-version number
+
 
 Multiple versions of the frontend (stable and canary) may be deployed simultaneously for experimentation purposes.
 
@@ -97,8 +82,20 @@ In our deployment:
 **Frontend Deployments**
 - **Stable frontend:** `sms-frontend`  
   Labels: `app: sms-frontend`, `version: v1`
+  
+<p align="center">
+  <img src="./images/stable.png" alt="Stable version" width="800"><br>
+  <em>Stable version</em>
+</p>
+  
 - **Canary frontend:** `sms-frontend-canary`  
   Labels: `app: sms-frontend`, `version: v2`
+
+<p align="center">
+  <img src="./images/canar.png" alt="Canary version" width="800"><br>
+  <em>Canary version</em>
+</p>
+  
 
 **Backend Deployments**
 - **Stable backend:** `sms-backend`  
@@ -171,7 +168,7 @@ All routing decisions for incoming user traffic are taken at this VirtualService
 
 - **VirtualService:** `sms-backend`
 - Role:
-  - Routes requests from frontend v1/v2 to corresponding backend versions
+  - Routes requests from frontend v1/v2 to corresponding backend versions with source labels
   - Enables backend versioning consistency during experiments
 
 ### 4.5 Istio DestinationRules
@@ -232,7 +229,13 @@ Separate ConfigMaps are required because:
 
 This design enables backend experimentation without affecting the stable backend or requiring image rebuilds.
 
----
+#### Secrets
+
+Sensitive configuration is handled using  Secrets to prevent credentials from being exposed in container images or configuration files.
+
+- **Secret:** `sms-secrets`
+
+This Secret stores the Gmail app password required by Alertmanager to send notification emails. It is injected into the Alertmanager component at runtime, ensuring secure handling of sensitive data.
 
 ### 4.7 Monitoring Resources
 
@@ -324,6 +327,9 @@ It visualizes frontend-specific metrics such as:
 
 The **Backend Dashboard** focuses on model-related behavior and backend performance.
 
+
+![alt text](./images/backendgrafana.png)
+
 It includes metrics such as:
 - **Total predictions per version**  
   (counter), using `model_predictions_total`
@@ -340,10 +346,12 @@ It includes metrics such as:
 
 The **Continuous Experimentation Dashboard** is specifically designed for the support and evaluation of the frontend canary experiment.
 
+![alt text](./images/frontendgrafana.png)
+
 It visualizes the experiment hypothesis:
-
 > *Does the new frontend UI (v2 canary) increase user engagement compared to the stable version (v1)?*
-
+> 
+![alt text](./images/1.jpeg)
 Key metrics and visualizations include:
 - **Request rate per version (key metric)**  
   (counter → rate), based on `sms_requests_total`
@@ -362,7 +370,39 @@ Key metrics and visualizations include:
   - Used only if NGINX ingress is enabled
   - Not part of the default Istio-based request path
 
-## 5. External Access Model
+## 5. Configurable Values
+
+These are the key configurable values in `values.yml` that can be adjusted during deployment:
+
+**Deployment Mode**  
+- `istio.enabled` → enable Istio mesh (true/false)  
+- `ingress.enabled` → enable NGINX ingress (true/false)  
+
+**Frontend**  
+- `replicas` → number of stable pods  
+- `canaryReplicas` → number of canary pods  
+- `image.repository` / `image.stableTag` / `image.canaryTag` → container images and versions  
+- `service.port` → service port  
+- `config.backendHost` / `config.backendPort` → backend connection  
+
+**Backend**  
+- `replicas` → stable pods  
+- `canaryReplicas` → canary pods  
+- `shadow.enabled` → enable shadow deployment  
+- `shadow.replicas` → shadow pods  
+- `image.repository` / `image.stableTag` / `image.canaryTag` / `image.shadowTag` → container images and versions  
+- `service.port` → service port 
+
+**Traffic Management**  
+- `traffic.mode` → `standard` = 100% stable, `canary` = split traffic  
+
+**Monitoring & Alerts**  
+- `monitoring.enabled` → enable Prometheus/Grafana/AlertManager  
+- `alerts.email.enabled` → enable email alerts  
+- `alerts.email.to` → recipient email
+
+
+## 6. External Access Model
 
 External users access the application through the Istio IngressGateway.
 
@@ -377,12 +417,12 @@ This access model provides a controlled entry point into the cluster.
 
 ---
 
-## 6. Request Flow Through the Cluster
+## 7. Request Flow Through the Cluster
 
 This section explains how requests progress through the cluster under different routing scenarios.  
 Each flow describes how Kubernetes and Istio resources interact to route traffic from external users to application pods, and how routing decisions are applied during experimentation.
 
-### 6.1 Baseline Request Flow (Stable Only)
+### 7.1 Baseline Request Flow (Stable Only)
 
 In the baseline scenario, no experimentation is active and all traffic is routed to the stable frontend version.
 
@@ -416,7 +456,9 @@ In the baseline scenario, no experimentation is active and all traffic is routed
    The backend returns the prediction to the frontend, which generates the final response.  
    The response is sent back through the service mesh and returned to the user via the IngressGateway.
 
-### 6.2 Canary Experiment Request Flow (90/10 Split)
+### 7.2 Canary Experiment Request Flow (90/10 Split)
+
+![alt text](./images/requestflow.drawio.png)
 
 In the canary experiment, traffic is split between stable and canary frontend versions to evaluate new behavior under real user traffic.
 
@@ -448,7 +490,7 @@ In the canary experiment, traffic is split between stable and canary frontend ve
 7. **Response Delivery**  
    Responses are returned to the user through the IngressGateway, with users consistently interacting with a single frontend version across requests.
 
-### 6.3 Shadow Experiment Request Flow
+### 7.3 Shadow Experiment Request Flow
 
 Shadow experiments allow evaluation of new versions without exposing them to users.
 
@@ -479,7 +521,7 @@ Shadowing enables safe validation of new frontend behavior and performance chara
 
 ---
 
-## 7. Continuous Experimentation Design
+## 8. Continuous Experimentation Design
 
 The deployment supports continuous experimentation through canary and shadow deployments.
 
@@ -489,7 +531,8 @@ The deployment supports continuous experimentation through canary and shadow dep
 
 ---
 
-## 8. Monitoring Visualization and Metrics Flow
+## 9. Monitoring Visualization and Metrics Flow
+![alt text](./images/monitoring.png)
 
 Metrics flow through the system as follows:
 
@@ -502,7 +545,7 @@ This observability setup enables data-driven evaluation of deployment changes.
 
 ---
 
-## 9. Summary for New Team Members
+## 10. Summary for New Team Members
 
 In summary:
 
