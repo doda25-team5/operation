@@ -87,7 +87,7 @@ H₀: EM ≤ 1.0 (no increase of egngagement among v2 users)
 **Decision Thresholds:**
 - EM > 1.5: Strong Accept H₁ (≥50% improvement)
 - 1.2 < EM ≤ 1.5: Accept H₁
-- 0.8 < EM ≤ 1.2: Inconclusive (marginal effect)
+- 0.8 < EM ≤ 1.2: Neutral (marginal effect)
 - EM ≤ 0.8: Reject H₁
 
 
@@ -155,8 +155,8 @@ The experiment uses a **tiered decision framework** based on the Engagement Mult
 |----------------------|--------------|----------|--------|
 | **EM > 1.5** | Latency OK | **STRONG ACCEPT** | Full rollout to 100% |
 | **1.2 < EM ≤ 1.5** | Latency OK | **ACCEPT** | Gradual rollout (50% → 100%) |
-| **1.0 < EM ≤ 1.2** | Latency OK | **INCONCLUSIVE** | Extended testing (24h) |
-| **0.8 < EM ≤ 1.0** | Any | **INCONCLUSIVE** | Re-evaluate design |
+| **1.0 < EM ≤ 1.2** | Latency OK | **NEUTRAL** | Extended testing (24h) |
+| **0.8 < EM ≤ 1.0** | Any | **NEUTRAL** | Re-evaluate design |
 | **EM ≤ 0.8** | Any | **REJECT** | Revert to v1 |
 | Any | Latency degraded | **REJECT** | Revert to v1 |
 
@@ -206,7 +206,7 @@ Reasoning: v2 users are 70% LESS engaged (0.3x), AND latency is 4x worse.
 ```
 
 
-**Scenario C: Inconclusive (EM=1.2)**
+**Scenario C: Neutral (EM=1.2)**
 ```
 Observed Data:
 - v1 Request Rate: 0.9 req/sec (90% of users, ~1.5 msgs per user)
@@ -298,9 +298,9 @@ The resulting dashboard should look like in the following screenshots to verify 
 
 **Key Panels:**
 
-1. **Request Rate Graph** - Shows v2 (yellow) significantly higher than v1 (green)
+1. **Request Rate Graph** - Shows v2 and v1 traffic
 2. **Engagement Multiplier** - Displays numerical factor (e.g., 3.5x for realistic traffic)
-3. **Decision Recommendation** - Automated verdict based on thresholds
+3. **Decision Recommendation** - Automated verdict based on computed thresholds
 4. **Safety Metrics** - Confirms no performance degradation
 
 ### 6.2 Statistical Significance
@@ -354,7 +354,7 @@ The experiment provides a **rigorous, data-driven approach** to UI validation:
 2. A/B test individual UI components
 3. Consider alternative design approaches
 
-**If INCONCLUSIVE:**
+**If NEUTRAL:**
 1. Extend test duration to 24-48 hours
 2. Increase sample size (higher traffic simulation)
 3. Gather qualitative user feedback
