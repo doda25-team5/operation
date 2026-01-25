@@ -192,7 +192,7 @@ Reasoning: v2 users are 3.5x more engaged per capita, latency is acceptable,
            classification behavior is consistent. Full rollout recommended.
 ```
 
-**Scenario B: Reject (EM=3.5)**
+**Scenario B: Reject (EM=0.3)**
 ```
 Observed Data:
 - v1 Request Rate: 0.9 req/sec (90% of users)
