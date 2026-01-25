@@ -160,7 +160,7 @@ Routing capabilities include:
 - Host-based routing (e.g., forcing stable or canary versions for grading/debugging)
 - Cookie-based routing for sticky sessions
 - Traffic splitting for canary experiments (e.g., 90/10 split)
-- Traffic mirroring for shadow experiments
+
 
 All routing decisions for incoming user traffic are taken at this VirtualService.
 
@@ -170,6 +170,7 @@ All routing decisions for incoming user traffic are taken at this VirtualService
 - Role:
   - Routes requests from frontend v1/v2 to corresponding backend versions with source labels
   - Enables backend versioning consistency during experiments
+  -  Traffic mirroring for shadow experiments
 
 ### 4.5 Istio DestinationRules
 
