@@ -157,6 +157,7 @@ Worked on the new refined new-deployment.md document. Refined some work done fro
 Worked on the deployment documentation doc, specifically explaining our Kubernetes and Istio resources.
 
 #### Priyansh: https://github.com/doda25-team5/operation/pull/34 https://github.com/doda25-team5/operation/pull/32
+Removed original namespace approach and made necessary changes in values.yaml and templates for the same + modified values.yaml to now accept backend-image specific env variables (values->configmap->envFrom configmap in deployments)
 
 #### Vedant: https://github.com/doda25-team5/operation/pull/40
 Worked on updating the values.yaml to ensure we can access prometheus, grafana dashboards without portforwarding on ingress mode. worked on ensuring that monitoring worked on our own cluster. 
