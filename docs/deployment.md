@@ -309,6 +309,8 @@ This ConfigMap defines **three predefined dashboards**, each serving a distinct 
 
 The **Frontend Dashboard** provides an overview of user-facing behavior and request patterns across frontend versions (stable and canary).
 
+![alt text](./images/frontendgrafana.png)
+
 It visualizes frontend-specific metrics such as:
 - **Request rate** per version  
   (counter → rate), based on `sms_requests_total`
@@ -346,7 +348,7 @@ It includes metrics such as:
 
 The **Continuous Experimentation Dashboard** is specifically designed for the support and evaluation of the frontend canary experiment.
 
-![alt text](./images/frontendgrafana.png)
+
 
 It visualizes the experiment hypothesis:
 > *Does the new frontend UI (v2 canary) increase user engagement compared to the stable version (v1)?*
