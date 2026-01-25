@@ -31,6 +31,8 @@ Vagrant.configure("2") do |config|
 
   config.ssh.insert_key = false
 
+  config.vm.synced_folder "./vbox-shared", "/mnt/shared" #Assignment A3 "shared VirtualBox folder to create shared storage across all Pods"
+
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.box = "bento/ubuntu-24.04"
     ctrl.vm.box_version = "202510.26.0"

@@ -114,7 +114,7 @@ backend:
     replicas: 1
 
   # Persistent storage for model files
-  # Mounts VirtualBox shared folder from cluster provisioning (A2)
+  # Mounts VirtualBox shared folder from cluster provisioning
   storage:
     enabled: true
     type: hostPath
