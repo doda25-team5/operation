@@ -164,3 +164,8 @@ Worked on updating the values.yaml to ensure we can access prometheus, grafana d
 
 #### Maja: https://github.com/doda25-team5/operation/pull/39 https://github.com/doda25-team5/lib-version/pull/4
 Worked on finalizing the project. Applied some fixes to version library and added improved documentation and new dashboard for the experiments. Together we worked on creating the slides for the presentation and ensuring the readmes are correct.
+
+## WEEK 10 - All Assignments
+
+#### Nicolas: https://github.com/doda25-team5/operation/pull/45, https://github.com/doda25-team5/operation/pull/46
+Worked on finalizing the last things for submission.
