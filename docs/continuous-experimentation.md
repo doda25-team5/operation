@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-This document describes a continuous experimentation approach to validate whether a redesigned user interface increases user engagement in the SMS Checker application. The experiment compares a stable baseline UI (v1) against an improved canary UI (v2) using a 90/10 traffic split with sticky session routing.
+This document describes a continuous experimentation approach to validate whether an updated user interface with improved visual design increases user engagement in the SMS Checker application. The experiment compares a stable baseline UI (v1) against an improved canary UI (v2) using a 90/10 traffic split with sticky session routing.
 
-**Hypothesis:** Redesigned UI (v2) increases per-user engagement, resulting in higher request rates despite serving only 10% of the user base.
+**Hypothesis:** Updated UI (v2) with improved visual polish increases per-user engagement, resulting in higher request rates despite serving only 10% of the user base.
 
 **Result:** The experiment provides quantitative evidence through metrics visualization in Grafana, enabling data-driven decision-making for full rollout.
 
@@ -21,11 +21,11 @@ This document describes a continuous experimentation approach to validate whethe
 - Simple result display
 
 **Canary v2:**
-- Enhanced visual design with improved color scheme
-- Interactive UI elements with hover effects
-- Real-time visual feedback during classification
-- Animated result display with confidence indicators
-- Improved mobile responsiveness
+- Improved spacing and alignment of sms-checker
+- Improved color theme and visual appeal
+- Improved typography
+- Subtle hover effects for better affordance
+- Cleaner and more readable result presentation
 
 **Implementation Details:**
 - Frontend image tags:
@@ -68,7 +68,7 @@ Traffic Distribution:
 
 ### 2.1 Primary Hypothesis
 
-**H₁:** UI v2 increases per-user engagement (measured by request rate).
+**H₁:** UI v2, featuring improved visual clarity, increases per-user engagement (measured by request rate).
 
 **Formal Statement:**
 ```
@@ -81,7 +81,7 @@ Let:
 Engagement Multiplier (EM) = (R_v2 / 0.1) / (R_v1 / 0.9)
 
 H₁: EM > 1.0 (increased engagement of v2 users)
-H₀: EM ≤ 1.0 (no increase of egngagement among v2 users)
+H₀: EM ≤ 1.0 (no increase of engagement among v2 users)
 ```
 
 **Decision Thresholds:**
@@ -143,7 +143,10 @@ All metrics are exposed via custom `/metrics` endpoint (Prometheus format) with 
 
 **Source:** Prometheus scrapes `/metrics` endpoint from both frontend versions every 30 seconds via ServiceMonitors.
 
-**Time Window:** For production experiments, 15+ minutes (900+ requests per version) recommended for statistical significance.
+**Time Window:** For initial canary validation, 15+ minutes is sufficient to detect
+                 large engagement differences and validate metric correctness.
+                 Production decisions require longer-running experiments (hours to days).
+
 
 **Dashboard:** Grafana dashboard `A4 Continuous Experimentation - UI Engagement Test` provides real-time visualization.
 
@@ -214,10 +217,11 @@ Observed Data:
 - Engagement Multiplier: (0.12/0.1) / (0.9/0.9) = 1.2 / 1.0 = 1.2
 - p95 Latency v1: 0.15s, v2: 0.16s
 
-Decision: ACCEPT (with caution)
+Decision: Neutral 
 Reasoning: EM=1.2 indicates 20% per-user engagement increase (1.8 vs 1.5 msgs).
-           Per decision table, EM=1.2 qualifies for ACCEPT. Consider gradual rollout
-           (50% → 100%) while monitoring for sustained improvement.
+           Per the decision table, EM=1.2 lies on the NEUTRAL boundary.
+           This indicates a marginal improvement that warrants extended testing
+           rather than immediate rollout.
 ```
 ---
 
@@ -225,7 +229,7 @@ Reasoning: EM=1.2 indicates 20% per-user engagement increase (1.8 vs 1.5 msgs).
 
 ### 5.1 Access Experiment Versions
 
-**Via Traffic Split (Natural Distribution):**
+**Via Traffic Split (90-10):**
 ```bash
 curl http://sms.test.local/sms
 # 90% chance of v1, 10% chance of v2
@@ -256,6 +260,10 @@ ingress:
 # Default execution
 ./run_experiment.sh
 ```
+**Note:** The `run_experiment.sh` script generates synthetic traffic with configurable
+user activity rates. It is intended to simulate engagement patterns and validate the
+correctness of the experimentation framework and metrics, not to represent real user behavior.
+
 
 **Configuration:** 
 - Target URL: `http://sms.test.local/sms`
@@ -305,10 +313,13 @@ The resulting dashboard should look like in the following screenshots to verify 
 
 ### 6.2 Statistical Significance
 
-**Minimum Sample Requirements:**
-- At least 900 total requests (ensures statistical power)
+**Minimum Sample Requirements (Initial Validation):**
+- At least 900 total requests (provides sufficient signal for initial comparison)
 - At least 15 minutes of continuous data (smooths variance)
 - Both versions must have > 0 requests (avoid division by zero)
+
+These thresholds are intended for early signal detection rather than
+formal statistical significance.
 
 **Confidence:**
 - The 90/10 split provides natural A/B testing
@@ -320,7 +331,7 @@ The resulting dashboard should look like in the following screenshots to verify 
 **Potential Confounds:**
 1. **Time-of-day effects** - Run experiment during consistent traffic periods
 2. **User population bias** - Random 90/10 split mitigates this
-3. **Novelty effect** - Extended testing (24h) can detect if effect fades
+3. **Novelty effect** - Extended testing (24h) should be used to detect if effect fades
 4. **Technical issues** - Safety metrics (latency, errors) protect against false positives
 
 **Mitigation:**
@@ -334,7 +345,7 @@ The resulting dashboard should look like in the following screenshots to verify 
 
 ### 7.1 Decision Framework Summary
 
-The experiment provides a **rigorous, data-driven approach** to UI validation:
+The experiment provides a **data-driven approach** to UI validation:
 
 **Quantitative:** Engagement Multiplier is a clear numerical metric
 **Automated:** Grafana dashboard provides instant recommendations  
@@ -430,6 +441,5 @@ sms_input_length_count{version="v1"} 1547
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** January 23, 2026  
+**Last Updated:** January 27, 2026  
 **Author:** doda25-team5  
-**Status:** Active Experiment
